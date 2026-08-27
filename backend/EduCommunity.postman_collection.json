@@ -1,0 +1,79 @@
+{
+  "info": {
+    "name": "EduCommunity Egypt API",
+    "description": "مجموعة Postman لكل مسارات باك اند EduCommunity. غيّر متغيّر base_url لو لزم، وسجّل الدخول أولاً لنسخ التوكن في متغيّر token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000/api/v1" },
+    { "key": "token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "1) المصادقة",
+      "item": [
+        { "name": "تسجيل حساب", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{base_url}}/auth/register", "body": { "mode": "raw", "raw": "{\n  \"name\": \"طالب جديد\",\n  \"email\": \"new@edu.eg\",\n  \"password\": \"password123\",\n  \"role\": \"student\",\n  \"grade\": \"sec-1\"\n}" } } },
+        { "name": "تسجيل دخول", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{base_url}}/auth/login", "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@edu.eg\",\n  \"password\": \"password123\"\n}" } } },
+        { "name": "بياناتي", "request": { "method": "GET", "url": "{{base_url}}/auth/me" } },
+        { "name": "تجديد الجلسة (refresh)", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{base_url}}/auth/refresh", "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"ضع_الـrefreshToken_هنا\"\n}" } } }
+      ]
+    },
+    {
+      "name": "2) المواد والدروس",
+      "item": [
+        { "name": "المواد الدراسية", "request": { "method": "GET", "url": "{{base_url}}/subjects" } },
+        { "name": "المواد المعتمدة", "request": { "method": "GET", "url": "{{base_url}}/materials" } },
+        { "name": "مواد بانتظار الموافقة (أدمن)", "request": { "method": "GET", "url": "{{base_url}}/materials/pending" } },
+        { "name": "موافقة على مادة (أدمن)", "request": { "method": "PATCH", "url": "{{base_url}}/materials/MATERIAL_ID/approve" } },
+        { "name": "الدروس أونلاين", "request": { "method": "GET", "url": "{{base_url}}/lessons" } }
+      ]
+    },
+    {
+      "name": "3) الشات والمدرسين",
+      "item": [
+        { "name": "رسائل غرفة", "request": { "method": "GET", "url": "{{base_url}}/chat/messages?room=sec-1" } },
+        { "name": "إرسال رسالة", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{base_url}}/chat/messages", "body": { "mode": "raw", "raw": "{\n  \"room\": \"sec-1\",\n  \"text\": \"مرحباً\"\n}" } } },
+        { "name": "المدرسون (حسب التقييم)", "request": { "method": "GET", "url": "{{base_url}}/teachers" } }
+      ]
+    },
+    {
+      "name": "4) سوفت سكيلز ومكافآت",
+      "item": [
+        { "name": "التاسكات", "request": { "method": "GET", "url": "{{base_url}}/soft-skills/tasks" } },
+        { "name": "التسليمات", "request": { "method": "GET", "url": "{{base_url}}/soft-skills/submissions" } },
+        { "name": "المكافآت", "request": { "method": "GET", "url": "{{base_url}}/rewards" } }
+      ]
+    },
+    {
+      "name": "المجتمع والتحديات",
+      "item": [
+        { "name": "المنشورات", "request": { "method": "GET", "url": "{{base_url}}/posts" } },
+        { "name": "التحديات", "request": { "method": "GET", "url": "{{base_url}}/challenges" } },
+        { "name": "المتصدّرون", "request": { "method": "GET", "url": "{{base_url}}/leaderboard" } },
+        { "name": "أفضل المدارس", "request": { "method": "GET", "url": "{{base_url}}/leaderboard/schools" } }
+      ]
+    },
+    {
+      "name": "الأدمن",
+      "item": [
+        { "name": "الإحصائيات", "request": { "method": "GET", "url": "{{base_url}}/admin/stats" } },
+        { "name": "المستخدمون", "request": { "method": "GET", "url": "{{base_url}}/admin/users" } }
+      ]
+    },
+    {
+      "name": "الشيفتات والحضور (جديد)",
+      "item": [
+        { "name": "كل الشيفتات", "request": { "method": "GET", "url": "{{base_url}}/shifts" } },
+        { "name": "المناوب الآن", "request": { "method": "GET", "url": "{{base_url}}/shifts/now" } },
+        { "name": "إضافة شيفت (أدمن/مدرس)", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{base_url}}/shifts", "body": { "mode": "raw", "raw": "{\n  \"teacher\": \"TEACHER_ID\",\n  \"subject\": \"الفيزياء\",\n  \"startsAt\": \"2026-07-13T10:00:00Z\",\n  \"endsAt\": \"2026-07-13T12:00:00Z\"\n}" } } },
+        { "name": "حضوري (مدرس)", "request": { "method": "GET", "url": "{{base_url}}/attendance/me" } },
+        { "name": "تسجيل خروج (مدرس)", "request": { "method": "POST", "url": "{{base_url}}/attendance/checkout" } },
+        { "name": "كل الحضور + الإجماليات (أدمن)", "request": { "method": "GET", "url": "{{base_url}}/attendance" } }
+      ]
+    }
+  ]
+}
