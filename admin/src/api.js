@@ -5,7 +5,7 @@ import axios from "axios";
 // الفرق الوحيد: التوكن هنا اسمه admin_token (مختلف عشان الأدمن والطالب
 // ينفع يكونوا مفتوحين في نفس المتصفّح من غير ما يتلخبطوا).
 
-const BASE_URL = "http://localhost:5000/api/v1";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 const http = axios.create({ baseURL: BASE_URL });
 
 // (1) نحطّ التوكن تلقائياً في كل طلب

@@ -49,7 +49,7 @@ function SubRow({ sub }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F5F7FF] flex-wrap">
       <div className="flex-1 text-right"><p className="font-bold text-sm">{sub.student?.name}</p><p className="text-xs text-slate-400">{sub.task?.title}</p></div>
-      <a href={"http://localhost:5000" + sub.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-bold">فتح الملف</a>
+      <a href={(import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "") + sub.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 font-bold">فتح الملف</a>
       <input type="number" value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="درجة" className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm" />
       <button disabled={g.isPending} onClick={() => g.mutate()} className="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">حفظ</button>
     </div>

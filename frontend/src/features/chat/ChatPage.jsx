@@ -7,7 +7,7 @@ import { useSocket } from "../../context/SocketContext";
 import { GRADES, gradeLabel } from "../../lib/grades";
 
 // عنوان الباك عشان نكمّل روابط المرفقات المحلية (/uploads/..)
-const BACKEND = "http://localhost:5000";
+const BACKEND = (import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "");
 function fileUrl(u) {
   if (!u) return "";
   return u.startsWith("http") ? u : BACKEND + u;

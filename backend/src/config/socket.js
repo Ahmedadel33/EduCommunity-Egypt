@@ -9,8 +9,9 @@ const registerSocketHandlers = require('../sockets');
 //   - Socket = اتصال دائم مفتوح، السيرفر هو اللي بيبعت أول ما يحصل جديد
 //   → أسرع (فوري) وضغط أقل على السيرفر
 function initSocket(httpServer) {
+  const corsOrigins = (process.env.CORS_ORIGIN || '*').split(',').map((origin) => origin.trim());
   const io = new Server(httpServer, {
-    cors: { origin: '*' }, // في الإنتاج نحطّ دومين الفرونت بالظبط
+    cors: { origin: corsOrigins.includes('*') ? '*' : corsOrigins },
   });
 
   // أي اتصال لازم يعدّي على المصادقة الأول

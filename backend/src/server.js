@@ -16,7 +16,8 @@ connectDB();
 const app = express();
 
 // ===== إعدادات أساسية =====
-app.use(cors());                  // نسمح للفرونت (على بورت تاني) يكلّم الباك
+const corsOrigins = (process.env.CORS_ORIGIN || '*').split(',').map((origin) => origin.trim());
+app.use(cors({ origin: corsOrigins.includes('*') ? '*' : corsOrigins }));
 app.use(express.json());          // نقدر نقرأ JSON من جسم الطلب
 app.use(morgan('dev'));           // نطبع كل طلب في الكونسول (مفيد للمتابعة)
 

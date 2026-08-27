@@ -8,7 +8,7 @@ import { useAuth } from "./AuthContext";
 // وأي كومبوننت يقدر يستخدمه.
 
 const SocketContext = createContext(null);
-const SOCKET_URL = "http://localhost:5000";
+const SOCKET_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "");
 
 export function SocketProvider({ children }) {
   const { user } = useAuth();

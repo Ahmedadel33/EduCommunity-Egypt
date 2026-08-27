@@ -1,0 +1,10 @@
+region = "eu-central-1"
+
+# ACM certificate ARN for api.example.com
+acm_certificate_arn = "arn:aws:acm:REGION:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+
+# Secrets Manager ARNs. Store the actual values in AWS Secrets Manager.
+secret_mongodb_uri = "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:educommunity/mongodb-uri"
+secret_jwt = "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:educommunity/jwt-secret"
+secret_jwt_refresh = "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:educommunity/jwt-refresh-secret"
+secret_redis_url = "arn:aws:secretsmanager:REGION:ACCOUNT_ID:secret:educommunity/redis-url"

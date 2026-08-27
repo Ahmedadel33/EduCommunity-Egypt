@@ -1,0 +1,75 @@
+name: Deploy EduCommunity to AWS
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: eu-central-1        # or me-south-1 (Bahrain) / me-central-1 (UAE) for the region
+  ECR_REPO: educommunity-backend
+  ECS_CLUSTER: educommunity
+  ECS_SERVICE: educommunity-backend
+  FRONTEND_BUCKET: educommunity-frontend
+  ADMIN_BUCKET: educommunity-admin
+  CLOUDFRONT_FRONT_ID: ${{ secrets.CLOUDFRONT_FRONT_ID }}
+  CLOUDFRONT_ADMIN_ID: ${{ secrets.CLOUDFRONT_ADMIN_ID }}
+
+jobs:
+  # ---------- Backend: build image -> push to ECR -> roll ECS service ----------
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push backend image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE=$REGISTRY/$ECR_REPO:${{ github.sha }}
+          docker build -f backend/backend.Dockerfile -t $IMAGE ./backend
+          docker push $IMAGE
+          docker tag $IMAGE $REGISTRY/$ECR_REPO:latest
+          docker push $REGISTRY/$ECR_REPO:latest
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+      - name: Force new ECS deployment (rolling, zero-downtime)
+        run: |
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE \
+            --force-new-deployment --region $AWS_REGION
+
+  # ---------- Frontends: build static -> sync to S3 -> invalidate CloudFront ----------
+  frontends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Build and deploy student/teacher app
+        working-directory: frontend
+        env:
+          VITE_API_URL: https://api.educommunity.eg/api/v1
+        run: |
+          npm ci && npm run build
+          aws s3 sync dist/ s3://$FRONTEND_BUCKET --delete
+          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_FRONT_ID --paths "/*"
+      - name: Build and deploy admin portal
+        working-directory: admin
+        env:
+          VITE_API_URL: https://api.educommunity.eg/api/v1
+        run: |
+          npm ci && npm run build
+          aws s3 sync dist/ s3://$ADMIN_BUCKET --delete
+          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ADMIN_ID --paths "/*"

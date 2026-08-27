@@ -248,7 +248,7 @@ const Feed = () => {
                       <FileText className="w-5 h-5 text-blue-600 shrink-0" />
                       <span className="text-xs font-bold text-slate-700 truncate flex-1">{post.file_url.split("/").pop()}</span>
                       <a
-                        href={`http://localhost:5000${post.file_url}`}
+                        href={`${(import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "")}${post.file_url}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 text-xs font-bold shrink-0 hover:underline"

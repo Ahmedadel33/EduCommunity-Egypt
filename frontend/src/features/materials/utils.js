@@ -1,4 +1,4 @@
-const BACKEND_ORIGIN = "http://localhost:5000";
+const BACKEND_ORIGIN = (import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "");
 const resolveFileUrl = (url) => url?.startsWith("http") ? url : `${BACKEND_ORIGIN}${url}`;
 const subjectName = (m) => typeof m.subject === "object" && m.subject ? m.subject.name : "";
 const uploaderName = (m) => typeof m.uploadedBy === "object" && m.uploadedBy ? m.uploadedBy.name : "";
