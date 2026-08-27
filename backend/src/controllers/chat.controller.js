@@ -12,13 +12,18 @@ const ApiError = require('../utils/ApiError');
 // ومفيش try/catch — ده شغل asyncHandler + error middleware.
 
 async function getHistory(req, res) {
-  const { messages, meta } = await chatService.getHistory(req.query);
+  const { messages, meta } = await chatService.getHistory(req.query, req.user);
   return sendSuccess(res, { messages }, '', meta); // الـmeta فيها بيانات الصفحات
 }
 
 async function sendMessage(req, res) {
-  const message = await chatService.sendMessage(req.body, req.user.id);
+  const message = await chatService.sendMessage(req.body, req.user);
   return sendCreated(res, { message }, 'تم إرسال الرسالة');
+}
+
+async function getContacts(req, res) {
+  const contacts = await chatService.listContacts(req.user, req.query);
+  return sendSuccess(res, contacts);
 }
 
 // رفع مرفق للشات (صوت / صورة / ملف بأي نوع) — بيرجّع رابط المرفق
@@ -32,4 +37,4 @@ async function uploadAttachment(req, res) {
   }, 'تم رفع المرفق');
 }
 
-module.exports = { getHistory, sendMessage, uploadAttachment };
+module.exports = { getHistory, sendMessage, getContacts, uploadAttachment };

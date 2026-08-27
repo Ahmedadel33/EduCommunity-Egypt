@@ -90,6 +90,9 @@ export const api = {
   // متابعة (oversight) — الأدمن يشوف الدروس والتحديات والمهارات
   getLessons: () => http.get("/lessons").then(unwrap),
   getChallenges: () => http.get("/challenges").then(unwrap),
+  getPendingChallenges: () => http.get("/challenges/pending").then(unwrap),
+  approveChallenge: (id) => http.patch("/challenges/" + id + "/approve").then(unwrap),
+  rejectChallenge: (id) => http.patch("/challenges/" + id + "/reject").then(unwrap),
   getTasks: () => http.get("/soft-skills/tasks").then(unwrap),
 
   // حضور المدرسين وحساب الوقت (للتقييم)

@@ -1,4 +1,5 @@
 const Message = require('../models/Message');
+const chatService = require('../services/chat.service');
 
 // هاندلر الشات — بيتنفّذ لكل مستخدم بيتّصل.
 // الفكرة: كل صف دراسي = "غرفة" (room) اسمها كود الصف مثل sec-1.
@@ -9,10 +10,20 @@ const Message = require('../models/Message');
 //   السيرفر → الفرونت: new_message · user_typing
 function registerChatHandlers(io, socket) {
   // (1) المستخدم بيدخل غرفة صفه
-  socket.on('join_room', (room) => {
+  socket.on('join_room', async (room) => {
     if (!room) return;
+    try {
+      await chatService.assertRoomAccess(room, socket.user);
+    } catch {
+      socket.emit('error_message', 'لا تملك صلاحية لهذه الغرفة');
+      return;
+    }
     socket.join(room); // Socket.IO بيحطّه في الغرفة دي
     console.log(`👤 ${socket.user.name} دخل غرفة ${room}`);
+  });
+
+  socket.on('leave_room', (room) => {
+    if (room) socket.leave(room);
   });
 
   // (2) المستخدم بيبعت رسالة (نص و/أو مرفق: صوت/صورة/ملف)
@@ -20,6 +31,7 @@ function registerChatHandlers(io, socket) {
     try {
       // لازم يكون فيه نص أو مرفق على الأقل
       if (!room || (!text && !attachmentUrl)) return;
+      await chatService.assertRoomAccess(room, socket.user);
 
       // نحفظ الرسالة في الداتابيز (عشان تفضل موجودة زي واتساب لما يقفل ويفتح)
       let message = await Message.create({
@@ -42,8 +54,13 @@ function registerChatHandlers(io, socket) {
   });
 
   // (3) مؤشّر "بيكتب دلوقتي"
-  socket.on('typing', (room) => {
+  socket.on('typing', async (room) => {
     if (!room) return;
+    try {
+      await chatService.assertRoomAccess(room, socket.user);
+    } catch {
+      return;
+    }
     // socket.to = لكل اللي في الغرفة ما عدا اللي بيكتب نفسه
     socket.to(room).emit('user_typing', { name: socket.user.name });
   });

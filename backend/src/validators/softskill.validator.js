@@ -4,9 +4,10 @@
 
 // إنشاء تاسك جديد
 function createTask(body) {
-  const { title } = body;
+  const { title, subject } = body;
 
   if (!title) return 'العنوان مطلوب';
+  if (!subject) return 'المادة مطلوبة';
 
   return null; // كله تمام
 }

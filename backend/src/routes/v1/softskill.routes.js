@@ -13,7 +13,7 @@ const router = express.Router();
 // (الأب بيركّب الراوتر ده على /soft-skills)
 
 // عرض كل التاسكات (متاح للجميع)
-router.get('/tasks', asyncHandler(softSkillController.listTasks));
+router.get('/tasks', authenticate, asyncHandler(softSkillController.listTasks));
 
 // إنشاء تاسك (للمعلم أو الأدمن فقط)
 router.post(

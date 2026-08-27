@@ -35,7 +35,7 @@ function OnDutyWidget() {
               <p className="font-bold text-sm text-slate-800">أ. {s.teacher?.name}</p>
               <p className="text-[11px] text-slate-400">{s.subject} • متاح للأسئلة الآن</p>
             </div>
-            <Link to="/chat">
+            <Link to={`/chat?teacher=${s.teacher?.id}`}>
               <button className="bg-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
                 <MessageCircle className="w-3.5 h-3.5" /> اسأل
               </button>

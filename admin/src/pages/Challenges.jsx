@@ -1,15 +1,24 @@
 import { useEffect, useState } from "react";
-import { Trophy, Star } from "lucide-react";
+import { Trophy, Star, Check, X } from "lucide-react";
 import { api } from "../api.js";
 
 // متابعة التحديات — الأدمن يشوف كل التحديات النشطة (عرض فقط)
 function Challenges() {
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState([]);
 
   useEffect(() => {
-    api.getChallenges().then((d) => setChallenges(d.challenges || [])).catch(() => {}).finally(() => setLoading(false));
+    Promise.all([api.getChallenges(), api.getPendingChallenges()]).then(([active, waiting]) => {
+      setChallenges(active.challenges || []);
+      setPending(waiting.challenges || []);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const updateStatus = (id, action) => {
+    const request = action === "approve" ? api.approveChallenge(id) : api.rejectChallenge(id);
+    request.then(() => setPending((items) => items.filter((item) => (item.id || item._id) !== id))).catch(() => {});
+  };
 
   const card = "bg-white rounded-2xl border border-slate-100 shadow-sm";
 
@@ -20,6 +29,21 @@ function Challenges() {
         <h1 className="text-xl font-extrabold text-slate-800">متابعة التحديات</h1>
       </div>
       <p className="text-sm text-slate-400 mb-5">التحديات النشطة على المنصة ونقاطها.</p>
+
+      {pending.length > 0 && (
+        <div className="mb-6">
+          <h2 className="font-extrabold text-slate-800 mb-3">مسابقات بانتظار الموافقة</h2>
+          <div className="space-y-2">
+            {pending.map((c) => (
+              <div key={c.id || c._id} className={`${card} p-4 flex items-center gap-3`}>
+                <div className="flex-1 text-right"><p className="font-bold text-slate-800">{c.title}</p><p className="text-xs text-slate-400">{c.subject} · {c.grade} · أضافها {c.createdBy?.name || "مدرس"}</p><p className="text-xs text-slate-500 mt-1">{c.description}</p></div>
+                <button onClick={() => updateStatus(c.id || c._id, "approve")} className="bg-emerald-600 text-white rounded-lg p-2" title="اعتماد"><Check className="w-4 h-4" /></button>
+                <button onClick={() => updateStatus(c.id || c._id, "reject")} className="bg-rose-600 text-white rounded-lg p-2" title="رفض"><X className="w-4 h-4" /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading && <p className="text-sm text-slate-400">جاري التحميل...</p>}
       {!loading && challenges.length === 0 && (

@@ -17,6 +17,9 @@ const router = express.Router();
 // جلب رسائل غرفة (لازم تسجيل دخول) — مثال: /chat/messages?room=sec-1&page=1
 router.get('/messages', authenticate, asyncHandler(chatController.getHistory));
 
+// المدرسون المرتبطون بصف الطالب للمحادثات الخاصة
+router.get('/contacts', authenticate, asyncHandler(chatController.getContacts));
+
 // إرسال رسالة (لازم تسجيل دخول)
 router.post(
   '/messages',

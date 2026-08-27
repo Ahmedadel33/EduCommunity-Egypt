@@ -11,7 +11,7 @@ const { sendSuccess, sendCreated } = require('../utils/apiResponse');
 // ومفيش try/catch — ده شغل asyncHandler + error middleware.
 
 async function listTasks(req, res) {
-  const tasks = await softSkillService.listTasks();
+  const tasks = await softSkillService.listTasks(req.user);
   return sendSuccess(res, { tasks });
 }
 
@@ -33,7 +33,7 @@ async function listSubmissions(req, res) {
 }
 
 async function gradeSubmission(req, res) {
-  const submission = await softSkillService.gradeSubmission(req.params.id, req.body);
+  const submission = await softSkillService.gradeSubmission(req.params.id, req.body, req.user);
   return sendSuccess(res, { submission }, 'تم حفظ الدرجة');
 }
 

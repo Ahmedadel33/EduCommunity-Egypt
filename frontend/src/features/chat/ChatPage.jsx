@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Send, MessageSquare, Paperclip, Mic, Square, FileText, X, Download } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Send, MessageSquare, Paperclip, Mic, Square, FileText, X, Download, Users, UserRound, Search } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
-import { GRADES, gradeLabel } from "../../lib/grades";
+import { gradeLabel } from "../../lib/grades";
 
 // عنوان الباك عشان نكمّل روابط المرفقات المحلية (/uploads/..)
 const BACKEND = (import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "");
@@ -17,7 +18,10 @@ function fileUrl(u) {
 function ChatPage() {
   const { user } = useAuth();
   const socket = useSocket();
-  const [room, setRoom] = useState(user?.grade || "sec-1");
+  const [searchParams] = useSearchParams();
+  const [room, setRoom] = useState(user?.grade || user?.grades?.[0] || "sec-1");
+  const [contacts, setContacts] = useState([]);
+  const [studentSearch, setStudentSearch] = useState("");
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [typingName, setTypingName] = useState("");
@@ -27,6 +31,27 @@ function ChatPage() {
   const fileRef = useRef(null);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
+
+  const isStudent = user?.role === "student";
+  const isGroupRoom = !room.startsWith("private:");
+  const activeContact = contacts.find((contact) => contact.room === room);
+
+  useEffect(() => {
+    api.getChatContacts().then((data) => {
+      const nextContacts = isStudent ? data.teachers || [] : data.students || [];
+      setContacts(nextContacts);
+      const requestedTeacher = searchParams.get("teacher");
+      const teacher = isStudent && requestedTeacher
+        ? nextContacts.find((contact) => String(contact.id) === requestedTeacher)
+        : null;
+      if (teacher) setRoom(teacher.room);
+    }).catch(() => {});
+  }, [isStudent, searchParams]);
+
+  useEffect(() => {
+    const defaultRoom = user?.grade || user?.grades?.[0];
+    if (defaultRoom) setRoom(defaultRoom);
+  }, [user?.grade, user?.grades]);
 
   // (1) نجيب سجل الرسائل المخزّنة كل ما نغيّر الغرفة
   useEffect(() => {
@@ -39,9 +64,16 @@ function ChatPage() {
     socket.emit("join_room", room);
     const onNewMessage = (m) => { if (m.room === room) setMessages((prev) => [...prev, m]); };
     const onTyping = ({ name }) => { setTypingName(name); setTimeout(() => setTypingName(""), 2000); };
+    const onSocketError = (message) => toast.error(message || "تعذر إرسال الرسالة");
     socket.on("new_message", onNewMessage);
     socket.on("user_typing", onTyping);
-    return () => { socket.off("new_message", onNewMessage); socket.off("user_typing", onTyping); };
+    socket.on("error_message", onSocketError);
+    return () => {
+      socket.emit("leave_room", room);
+      socket.off("new_message", onNewMessage);
+      socket.off("user_typing", onTyping);
+      socket.off("error_message", onSocketError);
+    };
   }, [socket, room]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typingName]);
@@ -149,11 +181,34 @@ function ChatPage() {
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0"><MessageSquare className="w-5 h-5" /></div>
-          <div className="min-w-0"><h1 className="text-base sm:text-xl font-extrabold text-slate-800 truncate">شات الصف</h1><p className="text-[11px] sm:text-xs text-slate-400 truncate">تكلّم مع زملائك في {gradeLabel(room)}</p></div>
+          <div className="min-w-0"><h1 className="text-base sm:text-xl font-extrabold text-slate-800 truncate">{isGroupRoom ? "شات المجموعة" : isStudent ? `محادثة مع أ. ${activeContact?.name || "المدرس"}` : `محادثة مع ${activeContact?.name || "الطالب"}`}</h1><p className="text-[11px] sm:text-xs text-slate-400 truncate">{isGroupRoom ? `تكلّم مع زملائك في ${gradeLabel(room)}` : isStudent ? activeContact?.subject : gradeLabel(activeContact?.grade)}</p></div>
         </div>
-        <select value={room} onChange={(e) => setRoom(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-2 sm:px-3 py-2 text-xs font-bold outline-none shrink-0">
-          {GRADES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-        </select>
+      </div>
+
+      {/* اختيار غرفة المجموعة أو محادثة مدرس مرتبطة بالصف */}
+      {user?.role === "teacher" && (
+        <form onSubmit={(e) => { e.preventDefault(); api.getChatContacts({ search: studentSearch }).then((data) => setContacts(data.students || [])).catch(() => {}); }} className="flex gap-2 mb-2">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)} placeholder="ابحث عن طالب بالاسم أو البريد" className="w-full bg-white border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs outline-none focus:border-blue-400" />
+          </div>
+          <button type="submit" className="rounded-xl bg-blue-600 text-white px-3 text-xs font-bold">بحث</button>
+        </form>
+      )}
+
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {(isStudent ? [user?.grade] : (user?.grades || [])).filter(Boolean).map((group) => (
+          <button key={group} onClick={() => setRoom(group)} className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ${room === group ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-600"}`}>
+            <Users className="w-4 h-4" /> {isStudent ? "مجموعة الصف" : gradeLabel(group)}
+          </button>
+        ))}
+        {contacts.map((contact) => (
+          <button key={contact.id} onClick={() => setRoom(contact.room)} className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ${room === contact.room ? "bg-teal-500 text-white" : "bg-white border border-slate-200 text-slate-600"}`}>
+            <UserRound className="w-4 h-4" />
+            <span>{isStudent ? `أ. ${contact.name}` : contact.name}</span>
+            {isStudent && contact.onDuty && <span className="w-1.5 h-1.5 rounded-full bg-green-300" />}
+          </button>
+        ))}
       </div>
 
       {/* الرسائل — بتاخد المساحة المتبقية وتعمل scroll */}

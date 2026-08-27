@@ -4,6 +4,7 @@ import { Sparkles, Plus, Upload, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
+import { SUBJECTS } from "../../lib/grades";
 
 const card = "bg-white rounded-2xl border border-slate-100 shadow-sm";
 
@@ -65,6 +66,7 @@ function SoftSkillsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [points, setPoints] = useState(10);
+  const [subject, setSubject] = useState(user?.subject || SUBJECTS[0]);
 
   const { data: tData } = useQuery({ queryKey: ["tasks"], queryFn: () => api.getTasks() });
   const tasks = tData?.tasks || [];
@@ -73,7 +75,7 @@ function SoftSkillsPage() {
   const { data: allS } = useQuery({ queryKey: ["all-subs"], queryFn: () => api.getTaskSubmissions(), enabled: canManage });
 
   const create = useMutation({
-    mutationFn: () => api.createTask({ title, description, points }),
+    mutationFn: () => api.createTask({ title, description, points, subject }),
     onSuccess: () => { toast.success("تم إنشاء التاسك"); setTitle(""); setDescription(""); setPoints(10); qc.invalidateQueries({ queryKey: ["tasks"] }); },
     onError: (e) => toast.error(e.message),
   });
@@ -100,6 +102,9 @@ function SoftSkillsPage() {
               <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان التاسك" className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none" />
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="الوصف" rows={2} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none" />
               <input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} className="w-28 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none" />
+              <select value={subject} onChange={(e) => setSubject(e.target.value)} disabled={user?.role === "teacher"} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none disabled:text-slate-500">
+                {SUBJECTS.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
             </div>
             <button disabled={create.isPending} onClick={() => { if (!title) return toast.error("اكتب العنوان"); create.mutate(); }} className="mt-3 bg-blue-600 text-white text-sm font-bold px-5 py-2 rounded-xl">حفظ التاسك</button>
           </div>
@@ -112,7 +117,7 @@ function SoftSkillsPage() {
             {tasks.length === 0 && <p className="text-sm text-slate-400">لا توجد مهارات بعد.</p>}
             {tasks.map((t) => isStudent
               ? <StudentTaskCard key={t.id} task={t} mySub={myByTask[t.id]} />
-              : <div key={t.id} className={`${card} p-5`}><div className="flex items-center justify-between"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{t.points} نقطة</span><h3 className="font-bold text-slate-800">{t.title}</h3></div>{t.description && <p className="text-sm text-slate-400 mt-1 text-right">{t.description}</p>}</div>
+              : <div key={t.id} className={`${card} p-5`}><div className="flex items-center justify-between"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{t.points} نقطة</span><h3 className="font-bold text-slate-800">{t.title}</h3></div><p className="text-xs text-blue-600 font-bold mt-2 text-right">{t.subject}</p>{t.description && <p className="text-sm text-slate-400 mt-1 text-right">{t.description}</p>}</div>
             )}
           </div>
         </div>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Trophy, Clock, CheckCircle, ChevronLeft, Send, X } from "lucide-react";
+import { Trophy, Clock, CheckCircle, ChevronLeft, Send, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { gradeLabel } from "../lib/grades";
 
 // ألوان المواد الدراسية — بالالتزام بتصميم الفيجما
 const SUBJECT_COLORS = {
@@ -17,15 +18,25 @@ function Challenges() {
   const { user, refreshUser } = useAuth();
   const [challenges, setChallenges] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [teacherSubmissions, setTeacherSubmissions] = useState([]);
+  const [scores, setScores] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedChallenge, setSelectedChallenge] = useState(null); // التحدي المفتوح في المودال
   const [answerText, setAnswerText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newChallenge, setNewChallenge] = useState({ title: "", description: "", points: 100, grade: "", startDate: "", endDate: "" });
+  const isTeacher = user?.role === "teacher";
 
   // نجيب التحديات + حلول الطالب (لو مسجّل دخول)
   const loadData = async () => {
     try {
       const chRes = await api.getChallenges();
+      if (isTeacher) {
+        const teacherRes = await api.getTeacherSubmissions();
+        setTeacherSubmissions(teacherRes.submissions || []);
+        setLoading(false);
+        return;
+      }
       let subRes = { submissions: [] };
       if (user) {
         subRes = await api.getSubmissions();
@@ -42,6 +53,31 @@ function Challenges() {
   useEffect(() => {
     loadData();
   }, [user]);
+
+  const createChallenge = async () => {
+    if (!newChallenge.title || !newChallenge.description || !newChallenge.grade || !newChallenge.startDate || !newChallenge.endDate) return toast.error("أكمل بيانات المسابقة");
+    try {
+      await api.createChallenge({ ...newChallenge, subject: user.subject, points: Number(newChallenge.points) });
+      toast.success("تم إرسال المسابقة للأدمن للمراجعة");
+      setNewChallenge({ title: "", description: "", points: 100, grade: user.grades?.[0] || "", startDate: "", endDate: "" });
+    } catch (e) { toast.error(e.message || "فشل إنشاء المسابقة"); }
+  };
+
+  const handleGrade = async (submission) => {
+    const score = Number(scores[submission.id || submission._id]);
+    const maxScore = submission.challengeId?.points || 0;
+    if (!Number.isFinite(score) || score < 0 || score > maxScore) {
+      toast.error(`الدرجة يجب أن تكون بين 0 و${maxScore}`);
+      return;
+    }
+    try {
+      await api.gradeChallengeSubmission(submission.id || submission._id, score);
+      toast.success("تم تقييم الحل");
+      await loadData();
+    } catch (e) {
+      toast.error(e.message || "فشل حفظ التقييم");
+    }
+  };
 
   // إرسال إجابة التحدي
   const handleSubmitAnswer = async () => {
@@ -79,6 +115,53 @@ function Challenges() {
   };
 
   const card = "bg-white rounded-2xl border border-slate-100 shadow-sm";
+
+  if (user?.role === "teacher") {
+    return (
+      <div className="max-w-5xl mx-auto space-y-5" dir="rtl">
+        <div className="text-right">
+          <h1 className="text-xl font-extrabold text-slate-800">مراجعة حلول المسابقات</h1>
+          <p className="text-xs text-slate-400 mt-1">راجع إجابات طلاب صفوفك وامنح كل حل درجته</p>
+        </div>
+        <div className={`${card} p-5 space-y-3`}>
+          <h2 className="font-extrabold text-slate-800 flex items-center gap-2"><Plus className="w-4 h-4" /> إضافة مسابقة في {user.subject}</h2>
+          <input value={newChallenge.title} onChange={(e) => setNewChallenge({ ...newChallenge, title: e.target.value })} placeholder="عنوان المسابقة" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          <textarea value={newChallenge.description} onChange={(e) => setNewChallenge({ ...newChallenge, description: e.target.value })} placeholder="وصف المسابقة" rows="2" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          <div className="grid sm:grid-cols-4 gap-2">
+            <select value={newChallenge.grade} onChange={(e) => setNewChallenge({ ...newChallenge, grade: e.target.value })} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"><option value="">اختر الصف</option>{(user.grades || []).map((grade) => <option key={grade} value={grade}>{gradeLabel(grade)}</option>)}</select>
+            <input type="number" min="1" value={newChallenge.points} onChange={(e) => setNewChallenge({ ...newChallenge, points: e.target.value })} placeholder="النقاط" className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+            <input type="datetime-local" value={newChallenge.startDate} onChange={(e) => setNewChallenge({ ...newChallenge, startDate: e.target.value })} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+            <input type="datetime-local" value={newChallenge.endDate} onChange={(e) => setNewChallenge({ ...newChallenge, endDate: e.target.value })} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <button onClick={createChallenge} className="bg-blue-600 text-white rounded-xl px-4 py-2 text-xs font-bold">إرسال للمراجعة</button>
+        </div>
+        {loading && <p className="text-sm text-slate-400 text-center py-10">جاري تحميل الحلول...</p>}
+        {!loading && teacherSubmissions.length === 0 && <p className="text-sm text-slate-400 text-center py-10 bg-[#F5F7FF] rounded-2xl">لا توجد حلول للمراجعة حاليًا.</p>}
+        {!loading && teacherSubmissions.map((submission) => {
+          const id = submission.id || submission._id;
+          const challenge = submission.challengeId || {};
+          const student = submission.userId || {};
+          const currentScore = submission.score ?? "";
+          return (
+            <div key={id} className={`${card} p-5 space-y-3`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="text-right flex-1">
+                  <h2 className="font-extrabold text-slate-800">{challenge.title}</h2>
+                  <p className="text-xs text-slate-400 mt-1">الطالب: {student.name} · {student.email}</p>
+                  <p className="text-xs text-slate-500 mt-3 whitespace-pre-wrap break-words">{submission.answer}</p>
+                </div>
+                <span className="shrink-0 text-xs font-bold text-slate-500">من {challenge.points} نقطة</span>
+              </div>
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                <input type="number" min="0" max={challenge.points} value={scores[id] ?? currentScore} onChange={(e) => setScores((prev) => ({ ...prev, [id]: e.target.value }))} placeholder="الدرجة" className="w-24 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400" />
+                <button onClick={() => handleGrade(submission)} className="bg-blue-600 text-white rounded-xl px-4 py-2 text-xs font-bold">حفظ التقييم</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   const stats = [
     { label: "مكتملة", value: completedCount, icon: CheckCircle, color: "bg-teal-100 text-teal-600" },
@@ -139,7 +222,7 @@ function Challenges() {
                 <p className="text-xs text-slate-400 mt-1 leading-relaxed">{ch.description}</p>
 
                 <div className="flex items-center justify-end gap-3 mt-3 text-[11px] font-bold text-slate-400">
-                  <span>المرحلة: {ch.grade}</span>
+                  <span>المرحلة: {gradeLabel(ch.grade.replace("الصف ", "").replace("الأول الثانوي", "sec-1").replace("الثاني الثانوي", "sec-2").replace("الثالث الثانوي", "sec-3")) || ch.grade}</span>
                   <span className="flex items-center gap-1 text-amber-500">
                     <Trophy className="w-3.5 h-3.5" /> {ch.points} نقطة
                   </span>

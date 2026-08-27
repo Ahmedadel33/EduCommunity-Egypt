@@ -52,6 +52,7 @@ export const api = {
 
   // ===== الشات (السجل — اللحظي عبر Socket) =====
   getMessages: (room) => http.get("/chat/messages" + toQuery({ room })).then(unwrap),
+  getChatContacts: (params = {}) => http.get("/chat/contacts" + toQuery(params)).then(unwrap),
   sendMessage: (room, text) => http.post("/chat/messages", { room, text }).then(unwrap),
   // رفع مرفق للشات (صوت/صورة/ملف) — بيرجّع { url, name, type }
   uploadChatFile: (formData) => http.post("/chat/upload", formData).then(unwrap),
@@ -81,7 +82,11 @@ export const api = {
 
   // ===== التحديات =====
   getChallenges: () => http.get("/challenges").then(unwrap),
+  createChallenge: (body) => http.post("/challenges", body).then(unwrap),
+  getMyChallenges: () => http.get("/challenges/mine").then(unwrap),
   getSubmissions: () => http.get("/challenges/submissions").then(unwrap),
+  getTeacherSubmissions: (params = {}) => http.get("/challenges/teacher/submissions" + toQuery(params)).then(unwrap),
+  gradeChallengeSubmission: (id, score) => http.patch("/challenges/submissions/" + id + "/grade", { score }).then(unwrap),
   submitChallenge: (id, answer) => http.post("/challenges/" + id + "/submit", { answer }).then(unwrap),
 
   // ===== المتصدّرون =====

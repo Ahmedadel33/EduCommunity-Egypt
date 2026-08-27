@@ -136,7 +136,7 @@ function TeacherRating() {
                 </div>
               ) : (
                 <div className="flex gap-2 mt-4">
-                  <button onClick={() => navigate("/chat")} className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold flex items-center justify-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> مراسلة</button>
+                  <button onClick={() => navigate(`/chat?teacher=${teacher.id}`)} className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold flex items-center justify-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> مراسلة</button>
                   {user?.role === "student" && (
                     <button onClick={() => { setSelectedTeacher(teacher.id); setUserRating(0); setCommentText(""); }} className="flex-1 py-2 rounded-xl bg-slate-50 text-blue-600 text-xs font-bold flex items-center justify-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> قيّم</button>
                   )}

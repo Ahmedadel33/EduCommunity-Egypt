@@ -218,8 +218,8 @@ async function seed() {
     console.log('🎥 Lessons created');
 
     await SoftSkillTask.insertMany([
-      { title: 'اقرأ كتاباً في التاريخ واعمل بريزنتيشن', description: 'اختر كتاباً وقدّم ملخصاً في 10 شرائح.', points: 20, createdBy: teachers[0]._id },
-      { title: 'بحث بسيط عن رياضة تحبها', description: 'اكتب صفحة عن رياضة وفوائدها.', points: 15, createdBy: teachers[1]._id },
+      { title: 'اقرأ كتاباً في التاريخ واعمل بريزنتيشن', description: 'اختر كتاباً وقدّم ملخصاً في 10 شرائح.', points: 20, subject: teachers[0].subject, createdBy: teachers[0]._id },
+      { title: 'بحث بسيط عن رياضة تحبها', description: 'اكتب صفحة عن رياضة وفوائدها.', points: 15, subject: teachers[1].subject, createdBy: teachers[1]._id },
     ]);
     console.log('🧩 Soft-skill tasks created');
 
