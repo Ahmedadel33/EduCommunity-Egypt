@@ -10,12 +10,12 @@ const { sendSuccess, sendCreated } = require('../utils/apiResponse');
 // ومفيش try/catch — ده شغل asyncHandler + error middleware.
 
 async function list(req, res) {
-  const lessons = await lessonService.list(req.query);
+  const lessons = await lessonService.list(req.query, req.user);
   return sendSuccess(res, { lessons });
 }
 
 async function create(req, res) {
-  const lesson = await lessonService.create(req.body, req.user.id);
+  const lesson = await lessonService.create(req.body, req.user);
   return sendCreated(res, { lesson }, 'تم إنشاء الدرس بنجاح');
 }
 

@@ -31,13 +31,20 @@ function LessonsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const canManage = user?.role === "teacher" || user?.role === "admin";
+  const allowedGrades = user?.role === "teacher"
+    ? (user.grades?.length ? user.grades : user.grade ? [user.grade] : [])
+    : GRADES.map((g) => g.value);
 
-  const [grade, setGrade] = useState(user?.grade || "sec-1");
+  const [grade, setGrade] = useState(allowedGrades[0] || "sec-1");
   const [tab, setTab] = useState("live");
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [startsAt, setStartsAt] = useState("");
+
+  useEffect(() => {
+    if (!allowedGrades.includes(grade)) setGrade(allowedGrades[0] || "sec-1");
+  }, [allowedGrades, grade]);
 
   const { data } = useQuery({ queryKey: ["lessons", grade], queryFn: () => api.getLessons(grade) });
   const lessons = data?.lessons || [];
@@ -66,7 +73,7 @@ function LessonsPage() {
           </div>
           <div className="flex items-center gap-2">
             <select value={grade} onChange={(e) => setGrade(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none">
-              {GRADES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+              {GRADES.filter((g) => allowedGrades.includes(g.value)).map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
             </select>
             {canManage && <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"><Plus className="w-4 h-4" /> جدولة درس</button>}
           </div>

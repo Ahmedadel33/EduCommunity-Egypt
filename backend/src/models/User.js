@@ -12,7 +12,13 @@ const userSchema = new mongoose.Schema(
       default: 'student',
     },
     grade: String,        // الصف الدراسي (للطالب)
+    grades: { type: [String], default: [] },
     subject: String,      // تخصّص المدرس (فيزياء / رياضيات ...) — للمدرس فقط
+    avatarUrl: { type: String, default: '' },
+    avatarPosition: {
+      x: { type: Number, default: 50, min: 0, max: 100 },
+      y: { type: Number, default: 50, min: 0, max: 100 },
+    },
     schoolCode: String,   // كود المدرسة
     nationalId: String,   // الرقم القومي
     bio: { type: String, default: '' },   // نبذة تعريفية (من صفحة الإعدادات)

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   User, Lock, Bell, Shield, Languages,
   Camera, Save, LogOut, ChevronLeft,
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { GRADES } from "../lib/grades";
+import { resolveMediaUrl } from "../lib/media";
 
 // ===== التبويبات =====
 const TABS = [
@@ -31,6 +32,10 @@ function ProfileTab({ user, refreshUser }) {
   const [schoolCode, setSchoolCode] = useState(user?.schoolCode || "");
   const [grade, setGrade]         = useState(user?.grade || "");
   const [bio, setBio]             = useState(user?.bio || "");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(resolveMediaUrl(user?.avatarUrl));
+  const [avatarPosition, setAvatarPosition] = useState(user?.avatarPosition || { x: 50, y: 50 });
+  const fileInputRef = useRef(null);
   const [saving, setSaving]       = useState(false);
 
   async function handleSave(e) {
@@ -38,7 +43,14 @@ function ProfileTab({ user, refreshUser }) {
     if (!name.trim()) { toast.error("الاسم مطلوب"); return; }
     setSaving(true);
     try {
-      const res = await api.updateMe({ name: name.trim(), bio, grade, schoolCode });
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("bio", bio);
+      formData.append("schoolCode", schoolCode);
+      if (user?.role !== "teacher") formData.append("grade", grade);
+      formData.append("avatarPosition", JSON.stringify(avatarPosition));
+      if (avatarFile) formData.append("avatar", avatarFile);
+      const res = await api.updateMe(formData);
       if (res.token)        localStorage.setItem("token", res.token);
       if (res.refreshToken) localStorage.setItem("refreshToken", res.refreshToken);
       await refreshUser();
@@ -62,17 +74,27 @@ function ProfileTab({ user, refreshUser }) {
         <h3 className="font-extrabold text-slate-800 text-base">تعديل الصورة الشخصية</h3>
         <p className="text-xs text-slate-400">توصى بصورة مربعة لا تقل عن 400×400 بكسل.</p>
         <div className="relative w-24 h-24 mt-1">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg">
-            {initials}
+          <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg">
+            {avatarPreview ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" style={{ objectPosition: `${avatarPosition.x}% ${avatarPosition.y}%` }} /> : initials}
           </div>
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setAvatarFile(file); setAvatarPreview(URL.createObjectURL(file)); } }} />
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             title="تغيير الصورة"
             className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition"
           >
             <Camera className="w-4 h-4" />
           </button>
         </div>
+        {avatarPreview && (
+          <div className="w-full max-w-xs space-y-2" dir="rtl">
+            <label className={labelCls}>موضع الصورة أفقيًا</label>
+            <input type="range" min="0" max="100" value={avatarPosition.x} onChange={(e) => setAvatarPosition((p) => ({ ...p, x: Number(e.target.value) }))} className="w-full accent-blue-600" />
+            <label className={labelCls}>موضع الصورة رأسيًا</label>
+            <input type="range" min="0" max="100" value={avatarPosition.y} onChange={(e) => setAvatarPosition((p) => ({ ...p, y: Number(e.target.value) }))} className="w-full accent-blue-600" />
+          </div>
+        )}
       </div>
 
       {/* حقول البيانات */}
@@ -87,7 +109,8 @@ function ProfileTab({ user, refreshUser }) {
           />
         </div>
         <div>
-          <label className={labelCls}>الصف الدراسي</label>
+          {user?.role !== "teacher" && <label className={labelCls}>الصف الدراسي</label>}
+          {user?.role !== "teacher" && (
           <select
             value={grade}
             onChange={(e) => setGrade(e.target.value)}
@@ -98,6 +121,8 @@ function ProfileTab({ user, refreshUser }) {
               <option key={g.value} value={g.value}>{g.label}</option>
             ))}
           </select>
+          )}
+          {user?.role === "teacher" && <p className="text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-2.5">الصفوف المسندة إليك: {(user.grades || []).join("، ") || "يحددها المسؤول"}</p>}
         </div>
       </div>
 
@@ -154,7 +179,7 @@ function AccountTab({ user, logout, navigate }) {
     }
     setSaving(true);
     try {
-      await api.updateMe({ password: newPassword });
+      await api.updateMe({ currentPassword, password: newPassword });
       toast.success("تم تغيير كلمة المرور ✅");
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (err) {

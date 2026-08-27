@@ -1,4 +1,5 @@
 const Lesson = require('../models/Lesson');
+const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 
 // ===== طبقة الخدمات (Service) =====
@@ -6,9 +7,17 @@ const ApiError = require('../utils/ApiError');
 // الكنترولر مابيعرفش حاجة عن Mongoose — بينادي الدوال دي بس.
 
 // ===== عرض الدروس (ممكن نفلتر بالصف) =====
-async function list(query) {
+async function list(query, user) {
   const filter = {};
-  if (query.grade) filter.grade = query.grade; // الفلتر اختياري — من غيره بنجيب كل الدروس
+  if (user?.role === 'teacher') {
+    const teacher = await User.findById(user.id).select('grades grade');
+    const allowedGrades = teacher?.grades?.length
+      ? teacher.grades
+      : teacher?.grade && teacher.grade !== 'كل المراحل' ? [teacher.grade] : [];
+    filter.grade = { $in: allowedGrades };
+  } else if (query.grade) {
+    filter.grade = query.grade;
+  }
 
   const lessons = await Lesson.find(filter)
     .populate('teacher', 'name') // نجيب اسم المدرّس بس مش بياناته كلها
@@ -18,8 +27,18 @@ async function list(query) {
 }
 
 // ===== إنشاء درس (للمعلم أو الأدمن) =====
-async function create(data, teacherId) {
+async function create(data, user) {
   const { title, grade, subject, startsAt, description } = data;
+
+  if (user.role === 'teacher') {
+    const teacher = await User.findById(user.id).select('grades grade');
+    const allowedGrades = teacher?.grades?.length
+      ? teacher.grades
+      : teacher?.grade && teacher.grade !== 'كل المراحل' ? [teacher.grade] : [];
+    if (!allowedGrades.includes(grade)) {
+      throw new ApiError(403, 'يمكنك إنشاء دروس للصفوف المسندة إليك فقط');
+    }
+  }
 
   // نعمل رابط غرفة Jitsi فريد (Jitsi مجاني ومفيش تسجيل)
   // بنستخدم الوقت الحالي عشان كل درس ياخد رابط لوحده
@@ -32,7 +51,7 @@ async function create(data, teacherId) {
     startsAt,
     description,
     meetingUrl,
-    teacher: teacherId, // صاحب الدرس = اللي عمله
+    teacher: user.id, // صاحب الدرس = اللي عمله
   });
 
   return lesson;

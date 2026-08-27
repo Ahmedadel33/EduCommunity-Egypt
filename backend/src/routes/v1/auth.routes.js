@@ -4,6 +4,7 @@ const authValidator = require('../../validators/auth.validator');
 const validate = require('../../middleware/validate.middleware');
 const asyncHandler = require('../../utils/asyncHandler');
 const { authenticate } = require('../../middleware/auth.middleware');
+const upload = require('../../middleware/upload.middleware');
 
 const router = express.Router();
 
@@ -24,6 +25,6 @@ router.post('/refresh', validate(authValidator.refresh), asyncHandler(authContro
 router.get('/me', authenticate, asyncHandler(authController.getMe));
 
 // تعديل بياناتي
-router.patch('/me', authenticate, validate(authValidator.updateMe), asyncHandler(authController.updateMe));
+router.patch('/me', authenticate, upload.single('avatar'), validate(authValidator.updateMe), asyncHandler(authController.updateMe));
 
 module.exports = router;

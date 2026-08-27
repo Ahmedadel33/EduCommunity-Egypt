@@ -12,7 +12,7 @@ const router = express.Router();
 // بتتقري زي فهرس: كل سطر بيقولك المسار ده بيعمل إيه ومين مسموح له.
 
 // عرض الدروس — مفتوح للكل، وممكن نفلتر بالصف (?grade=sec-1)
-router.get('/', asyncHandler(lessonController.list));
+router.get('/', authenticate, asyncHandler(lessonController.list));
 
 // إنشاء درس — المعلم أو الأدمن بس
 router.post(

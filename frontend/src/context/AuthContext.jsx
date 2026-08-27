@@ -3,9 +3,30 @@ import { api } from "../lib/api";
 
 const AuthContext = createContext(undefined);
 
+function applyPreferences(preferences = {}) {
+  const language = preferences.language || localStorage.getItem("language") || "ar";
+  const theme = preferences.theme || localStorage.getItem("theme") || "light";
+  const fontSize = preferences.fontSize || localStorage.getItem("fontSize") || "medium";
+  const root = document.documentElement;
+  root.lang = language;
+  root.dir = language === "ar" ? "rtl" : "ltr";
+  root.classList.toggle("dark", theme === "dark");
+  if (theme === "system") root.classList.toggle("dark", window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  root.style.fontSize = fontSize === "small" ? "15px" : fontSize === "large" ? "18px" : "16px";
+  localStorage.setItem("language", language);
+  localStorage.setItem("theme", theme);
+  localStorage.setItem("fontSize", fontSize);
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);      // بيانات المستخدم الحالي
   const [loading, setLoading] = useState(true); // بننتظر لحد ما نتأكد من الدخول
+
+  useEffect(() => { applyPreferences(); }, []);
+
+  useEffect(() => {
+    applyPreferences(user?.preferences);
+  }, [user]);
 
   // أول ما التطبيق يفتح: لو فيه توكن محفوظ، نجيب بيانات المستخدم
   useEffect(() => {
@@ -57,7 +78,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, applyPreferences }}>
       {children}
     </AuthContext.Provider>
   );

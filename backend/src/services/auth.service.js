@@ -106,17 +106,32 @@ async function getMe(userId) {
 
 // ===== تعديل بياناتي =====
 // بيقبل: الاسم · كلمة المرور · نبذة · الصف · كود المدرسة · التفضيلات (إشعارات/خصوصية/لغة/مظهر)
-async function updateMe(userId, data) {
-  const { name, password, bio, grade, schoolCode, preferences } = data;
+async function updateMe(userId, data, avatarUrl) {
+  const { name, currentPassword, password, bio, grade, schoolCode, preferences, avatarPosition } = data;
 
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, 'المستخدم غير موجود');
 
   if (name) user.name = name;
-  if (password) user.password = await bcrypt.hash(password, 10);
+  if (password) {
+    if (!currentPassword || !(await bcrypt.compare(currentPassword, user.password))) {
+      throw new ApiError(401, 'كلمة المرور الحالية غير صحيحة');
+    }
+    user.password = await bcrypt.hash(password, 10);
+  }
   if (bio !== undefined) user.bio = bio;
   if (grade !== undefined) user.grade = grade;
   if (schoolCode !== undefined) user.schoolCode = schoolCode;
+  if (avatarUrl) user.avatarUrl = avatarUrl;
+  const parsedAvatarPosition = typeof avatarPosition === 'string'
+    ? (() => { try { return JSON.parse(avatarPosition); } catch { return null; } })()
+    : avatarPosition;
+  if (parsedAvatarPosition && typeof parsedAvatarPosition === 'object') {
+    const x = Number(parsedAvatarPosition.x);
+    const y = Number(parsedAvatarPosition.y);
+    if (Number.isFinite(x)) user.avatarPosition.x = Math.max(0, Math.min(100, x));
+    if (Number.isFinite(y)) user.avatarPosition.y = Math.max(0, Math.min(100, y));
+  }
 
   // التفضيلات: دمج جزئي (نحدّث اللي اتبعت بس ونسيب الباقي زي ما هو)
   if (preferences && typeof preferences === 'object') {

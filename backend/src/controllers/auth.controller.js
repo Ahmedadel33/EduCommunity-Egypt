@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const { sendSuccess, sendCreated } = require('../utils/apiResponse');
+const upload = require('../middleware/upload.middleware');
 
 // ===== طبقة الكنترولر =====
 // شغلها 3 خطوات بس ومفيش غيرهم:
@@ -30,7 +31,7 @@ async function getMe(req, res) {
 }
 
 async function updateMe(req, res) {
-  const result = await authService.updateMe(req.user.id, req.body);
+  const result = await authService.updateMe(req.user.id, req.body, upload.getFileUrl(req.file));
   return sendSuccess(res, result, 'تم حفظ التعديلات');
 }
 

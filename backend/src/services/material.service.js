@@ -9,11 +9,19 @@ const { getPagination, buildMeta } = require('../utils/pagination');
 // الكنترولر مابيعرفش حاجة عن Mongoose — بينادي الدوال دي بس.
 
 // ===== عرض المواد المعتمدة (للطلاب/الجميع) =====
-async function list(query) {
+async function list(query, user) {
   const { grade, subject, type, search, isNextGrade, source } = query;
 
   const filter = { status: 'approved' }; // الطلاب يشوفوا المعتمد فقط
-  if (grade) filter.grade = grade;
+  if (user?.role === 'teacher') {
+    const teacher = await User.findById(user.id).select('grades grade');
+    const allowedGrades = teacher?.grades?.length
+      ? teacher.grades
+      : teacher?.grade && teacher.grade !== 'كل المراحل' ? [teacher.grade] : [];
+    filter.grade = { $in: allowedGrades };
+  } else if (grade) {
+    filter.grade = grade;
+  }
   if (subject) filter.subject = subject;
   if (type) filter.type = type;
   if (source) filter.source = source; // ministry أو teacher
@@ -111,6 +119,12 @@ async function create(user, data, uploadedFileUrl) {
     if (!subjectDoc) throw new ApiError(400, 'المادة غير موجودة');
     if (!teacher.subject || subjectDoc.name !== teacher.subject) {
       throw new ApiError(403, `يمكنك رفع مواد في تخصّصك فقط (${teacher.subject || 'غير محدّد'})`);
+    }
+    const allowedGrades = teacher.grades?.length
+      ? teacher.grades
+      : teacher.grade && teacher.grade !== 'كل المراحل' ? [teacher.grade] : [];
+    if (!allowedGrades.includes(grade)) {
+      throw new ApiError(403, 'يمكنك رفع مواد للصفوف المسندة إليك فقط');
     }
   }
 

@@ -18,9 +18,9 @@ const Reward = require('../models/Reward');
 const bcrypt = require('bcryptjs');
 
 const teachersData = [
-  { name: 'أ. أحمد علي', email: 'ahmed.ali@edu.eg', role: 'teacher', grade: 'كل المراحل', subject: 'الفيزياء' },
-  { name: 'أ. سارة محمود', email: 'sara.mahmoud@edu.eg', role: 'teacher', grade: 'كل المراحل', subject: 'الرياضيات' },
-  { name: 'أ. محمد حسن', email: 'mohamed.hasan@edu.eg', role: 'teacher', grade: 'كل المراحل', subject: 'الأحياء' },
+  { name: 'أ. أحمد علي', email: 'ahmed.ali@edu.eg', role: 'teacher', grades: ['sec-1', 'sec-2'], subject: 'الفيزياء' },
+  { name: 'أ. سارة محمود', email: 'sara.mahmoud@edu.eg', role: 'teacher', grades: ['sec-1', 'sec-2', 'sec-3'], subject: 'الرياضيات' },
+  { name: 'أ. محمد حسن', email: 'mohamed.hasan@edu.eg', role: 'teacher', grades: ['sec-1', 'sec-3'], subject: 'الأحياء' },
 ];
 
 const challengesData = [

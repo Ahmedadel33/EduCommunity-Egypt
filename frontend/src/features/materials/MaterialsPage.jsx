@@ -21,9 +21,12 @@ function MaterialsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const canManage = user?.role === "teacher" || user?.role === "admin";
+  const allowedGrades = user?.role === "teacher"
+    ? (user.grades?.length ? user.grades : user.grade ? [user.grade] : [])
+    : GRADES.map((g) => g.value);
 
   const [searchParams] = useSearchParams(); // البحث الجاي من التوب-بار (?search=)
-  const [grade, setGrade] = useState(user?.grade || "sec-1");
+  const [grade, setGrade] = useState(allowedGrades[0] || "sec-1");
   const [type, setType] = useState(ALL);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [mineOnly, setMineOnly] = useState(false); // المدرس يشوف موادّه هو بكل الحالات
@@ -33,6 +36,10 @@ function MaterialsPage() {
     const q = searchParams.get("search");
     if (q) { setSearch(q); setMineOnly(false); }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!allowedGrades.includes(grade)) setGrade(allowedGrades[0] || "sec-1");
+  }, [allowedGrades, grade]);
 
   const params = useMemo(() => ({ grade, type: type === ALL ? undefined : type, search: search || undefined, limit: 12 }), [grade, type, search]);
 
@@ -116,7 +123,7 @@ function MaterialsPage() {
             <h1 className="text-xl font-extrabold text-slate-800">المواد التعليمية</h1>
             <p className="text-xs text-slate-400">{materials.length} مادة • {gradeLabel(grade)}</p>
           </div>
-          {canManage && <UploadMaterialDialog defaultGrade={grade} />}
+          {canManage && <UploadMaterialDialog defaultGrade={grade} allowedGrades={allowedGrades} />}
         </div>
 
         {/* الفلاتر (تبويبات النوع + الصف + بحث) */}
@@ -132,7 +139,7 @@ function MaterialsPage() {
           </div>
           <div className="flex items-center gap-2">
             <select value={grade} onChange={(e) => setGrade(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold outline-none">
-              {GRADES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+              {GRADES.filter((g) => allowedGrades.includes(g.value)).map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
             </select>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث عن مادة..." className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs outline-none w-36" />
           </div>

@@ -12,7 +12,7 @@ const router = express.Router();
 // بتتقري زي فهرس: كل سطر بيقولك المسار بيعمل إيه ومين مسموح له.
 
 // عرض المواد المعتمدة (للجميع) — مع فلاتر وبحث وترقيم صفحات
-router.get('/', asyncHandler(materialController.list));
+router.get('/', authenticate, asyncHandler(materialController.list));
 
 // ⚠️ /mine و /pending لازم يبقوا قبل /:id
 // لأن Express بيجرّب المسارات بالترتيب، ولو /:id جه الأول هيفتكر إن "mine" هي الـid.

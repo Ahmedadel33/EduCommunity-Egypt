@@ -7,7 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { GRADES, MATERIAL_TYPES } from "../../lib/grades";
 
 // نافذة إضافة مادة تعليمية — بالالتزام بتصميم الفيجما
-const UploadMaterialDialog = ({ defaultGrade }) => {
+const UploadMaterialDialog = ({ defaultGrade, allowedGrades = GRADES.map((g) => g.value) }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -127,7 +127,7 @@ const UploadMaterialDialog = ({ defaultGrade }) => {
                     }}
                     className={input}
                   >
-                    {GRADES.map((g) => (
+                    {GRADES.filter((g) => allowedGrades.includes(g.value)).map((g) => (
                       <option key={g.value} value={g.value}>{g.label}</option>
                     ))}
                   </select>

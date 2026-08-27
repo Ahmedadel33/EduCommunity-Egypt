@@ -7,7 +7,7 @@ const { sendSuccess, sendCreated } = require('../utils/apiResponse');
 // مفيش منطق ولا داتابيز ولا try/catch هنا.
 
 async function list(req, res) {
-  const { materials, meta } = await materialService.list(req.query);
+  const { materials, meta } = await materialService.list(req.query, req.user);
   return sendSuccess(res, { materials }, '', meta);
 }
 
