@@ -5,7 +5,6 @@ import { Mail, Lock, Eye, EyeOff, User, School, CreditCard, ArrowLeft } from "lu
 import { useAuth } from "../../context/AuthContext";
 import { GRADES, SUBJECTS } from "../../lib/grades";
 
-// فورم بسيط للدخول والتسجيل باستخدام useState
 function AuthForm() {
   const navigate = useNavigate();
   const { login, register } = useAuth();
@@ -14,7 +13,6 @@ function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // إظهار/إخفاء كلمة المرور
 
-  // كل حقل في الفورم له متغير
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +22,6 @@ function AuthForm() {
   const [schoolCode, setSchoolCode] = useState("");
   const [nationalId, setNationalId] = useState(""); // الرقم القومي (للتحقق من هوية الطالب)
 
-  // كلاسات متكررة عشان الكود يفضل بسيط
   const inputClass = "w-full rounded-xl border border-slate-200 bg-slate-50 pr-10 pl-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:bg-white";
   const labelClass = "block text-sm font-bold text-slate-600 mb-1 text-right";
   const selectClass = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:bg-white";
@@ -32,7 +29,6 @@ function AuthForm() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // تحقّق بسيط قبل الإرسال
     if (!email || !password) {
       toast.error("اكتب البريد وكلمة المرور");
       return;
