@@ -1,10 +1,10 @@
-# EduCommunity 🎓
+# EduCommunity 
 
 EduCommunity is a comprehensive full-stack educational platform designed to connect teachers, students, and administrators, featuring a robust microservices-ready architecture and production-grade DevOps implementation.
 
 ---
 
-## 🚀 Tech Stack & Infrastructure
+ Tech Stack & Infrastructure
 
 ### **Backend**
 * **Runtime:** Node.js
@@ -26,7 +26,7 @@ EduCommunity is a comprehensive full-stack educational platform designed to conn
 
 ---
 
-## ✨ Features
+##  Features
 
 * **Multi-Role User Management:** Tailored dashboards for Students, Teachers, and Administrators.
 * **Real-Time Communication:** Instant messaging and notifications powered by **Socket.IO**.
@@ -38,7 +38,7 @@ EduCommunity is a comprehensive full-stack educational platform designed to conn
 
 ---
 
-## 🛠️ Installation & Setup
+##  Installation & Setup
 
 ### Prerequisites
 * Node.js & npm installed locally
