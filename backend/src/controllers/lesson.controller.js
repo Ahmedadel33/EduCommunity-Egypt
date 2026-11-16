@@ -1,5 +1,6 @@
 const lessonService = require('../services/lesson.service');
 const { sendSuccess, sendCreated } = require('../utils/apiResponse');
+const notificationService = require('../services/notification.service');
 
 // ===== طبقة الكنترولر =====
 // شغلها 3 خطوات بس ومفيش غيرهم:
@@ -16,6 +17,9 @@ async function list(req, res) {
 
 async function create(req, res) {
   const lesson = await lessonService.create(req.body, req.user);
+  notificationService.notifyNewLesson(lesson, req.user.id).catch((error) => {
+    console.error('[email] Failed to dispatch new lesson notification:', error.message);
+  });
   return sendCreated(res, { lesson }, 'تم إنشاء الدرس بنجاح');
 }
 

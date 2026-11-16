@@ -1,6 +1,11 @@
 const materialService = require('../services/material.service');
 const upload = require('../middleware/upload.middleware');
 const { sendSuccess, sendCreated } = require('../utils/apiResponse');
+const notificationService = require('../services/notification.service');
+
+function dispatchNotification(task, category) {
+  task.catch((error) => console.error(`[email] Failed to dispatch ${category} notification:`, error.message));
+}
 
 // ===== طبقة الكنترولر للمواد التعليمية =====
 // 3 خطوات بس: نقرا من الطلب → ننادي الـservice → نبعت الرد.
@@ -37,11 +42,15 @@ async function create(req, res) {
   const uploadedFileUrl = upload.getFileUrl(req.file);
 
   const { material, message } = await materialService.create(req.user, req.body, uploadedFileUrl);
+  if (material.status === 'approved') {
+    dispatchNotification(notificationService.notifyNewMaterial(material._id, req.user.id), 'new material');
+  }
   return sendCreated(res, { material }, message);
 }
 
 async function approve(req, res) {
   const material = await materialService.approve(req.params.id);
+  dispatchNotification(notificationService.notifyNewMaterial(material._id, req.user.id), 'new material');
   return sendSuccess(res, { material }, 'تمت الموافقة على المادة');
 }
 

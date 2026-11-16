@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import { GRADES, MATERIAL_TYPES } from "../../lib/grades";
@@ -59,6 +60,10 @@ const UploadMaterialDialog = ({ defaultGrade, allowedGrades = GRADES.map((g) => 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (user?.role === "teacher" && !allowedGrades.includes(grade)) {
+      toast.error("اختر صفوفك من الإعدادات أولًا");
+      return;
+    }
     if (!title || !subject || !grade) {
       toast.error("برجاء ملء العنوان والصف والمادة");
       return;
@@ -119,18 +124,26 @@ const UploadMaterialDialog = ({ defaultGrade, allowedGrades = GRADES.map((g) => 
                 <div>
                   <label className={label}>الصف</label>
                   {/* تغيير الصف بيصفّر المادة عشان المواد بتختلف من صف لصف */}
-                  <select
-                    value={grade}
-                    onChange={(e) => {
-                      setGrade(e.target.value);
-                      setSubject("");
-                    }}
-                    className={input}
-                  >
-                    {GRADES.filter((g) => allowedGrades.includes(g.value)).map((g) => (
-                      <option key={g.value} value={g.value}>{g.label}</option>
-                    ))}
-                  </select>
+                  {allowedGrades.length > 0 ? (
+                    <select
+                      value={grade}
+                      onChange={(e) => {
+                        setGrade(e.target.value);
+                        setSubject("");
+                      }}
+                      className={input}
+                    >
+                      {GRADES.filter((g) => allowedGrades.includes(g.value)).map((g) => (
+                        <option key={g.value} value={g.value}>{g.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-xs text-amber-700 bg-amber-50 rounded-xl p-3">
+                      لا توجد صفوف مرتبطة بحسابك. اختر صفوفك من{" "}
+                      <Link to="/settings" className="font-bold underline">الإعدادات</Link>
+                      {" "}أولًا.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={label}>المادة</label>

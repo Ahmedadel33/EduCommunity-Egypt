@@ -49,3 +49,26 @@ EduCommunity is a comprehensive full-stack educational platform designed to conn
 ```bash
 git clone [https://github.com/Ahmedadel33/EduCommunity-Egypt.git](https://github.com/Ahmedadel33/EduCommunity-Egypt.git)
 cd EduCommunity-Egypt
+```
+
+### Run all applications locally
+Install the root runner and each application's dependencies:
+```bash
+npm install
+npm --prefix backend ci
+npm --prefix frontend ci
+npm --prefix admin ci
+```
+
+Create the backend environment file and start MongoDB and Redis:
+```bash
+Copy-Item backend\.env.example backend\.env
+docker compose up -d mongo redis
+```
+
+Then run the backend, frontend, and admin dashboard together from the repository root:
+```bash
+npm run dev
+```
+
+The frontend is available at `http://localhost:8080`, the admin dashboard at `http://localhost:5200`, and the backend at `http://localhost:5000`. Stop all three with `Ctrl+C`.

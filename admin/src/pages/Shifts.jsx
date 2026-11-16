@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, Plus, Trash2 } from "lucide-react";
 import { api } from "../api.js";
+import { useAdminI18n } from "../i18n.js";
 
 // شيفتات المناوبة — الأدمن يعيّن مدرس مناوب لمادة في وقت معيّن
 function Shifts() {
+  const { language, t } = useAdminI18n();
   const [shifts, setShifts] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [teacher, setTeacher] = useState("");
@@ -36,12 +38,12 @@ function Shifts() {
     e.preventDefault();
     setMsg("");
     if (!teacher || !subject || !startsAt || !endsAt) {
-      setMsg("لازم تملأ كل الحقول");
+      setMsg(t("لازم تملأ كل الحقول"));
       return;
     }
     try {
       await api.createShift({ teacher, subject, startsAt, endsAt });
-      setMsg("تم إضافة الشيفت ✅");
+      setMsg(t("تم إضافة الشيفت ✅"));
       setSubject("");
       setStartsAt("");
       setEndsAt("");
@@ -62,16 +64,16 @@ function Shifts() {
     <div className="max-w-5xl">
       <div className="flex items-center gap-2 mb-1">
         <CalendarClock className="w-5 h-5 text-blue-600" />
-        <h1 className="text-xl font-extrabold text-slate-800">شيفتات المناوبة</h1>
+        <h1 className="text-xl font-extrabold text-slate-800">{t("شيفتات المناوبة")}</h1>
       </div>
-      <p className="text-sm text-slate-400 mb-5">عيّن مدرس مناوب لكل مادة عشان الطالب يلاقي حد يسأله في أي وقت.</p>
+      <p className="text-sm text-slate-400 mb-5">{t("عيّن مدرس مناوب لكل مادة عشان الطالب يلاقي حد يسأله في أي وقت.")}</p>
 
       {msg && <p className="text-sm bg-blue-50 text-blue-700 rounded-lg p-2 mb-4">{msg}</p>}
 
       {/* نموذج إضافة شيفت */}
       <form onSubmit={add} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-6 grid sm:grid-cols-5 gap-3 items-end">
         <div className="sm:col-span-1">
-          <label className="block text-xs font-bold text-slate-500 mb-1">المدرس</label>
+          <label className="block text-xs font-bold text-slate-500 mb-1">{t("المدرس")}</label>
           <select value={teacher} onChange={(e) => setTeacher(e.target.value)} className={input}>
             {teachers.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
@@ -79,34 +81,34 @@ function Shifts() {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">المادة</label>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} className={input} placeholder="الفيزياء" />
+          <label className="block text-xs font-bold text-slate-500 mb-1">{t("المادة")}</label>
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} className={input} placeholder={t("الفيزياء")} />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">من</label>
+          <label className="block text-xs font-bold text-slate-500 mb-1">{t("من")}</label>
           <input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className={input} />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">إلى</label>
+          <label className="block text-xs font-bold text-slate-500 mb-1">{t("إلى")}</label>
           <input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className={input} />
         </div>
         <button className="bg-blue-600 text-white font-bold text-sm py-2 rounded-xl flex items-center justify-center gap-1">
-          <Plus className="w-4 h-4" /> إضافة
+          <Plus className="w-4 h-4" /> {t("إضافة")}
         </button>
       </form>
 
       {/* قائمة الشيفتات */}
       <div className="space-y-3">
-        {shifts.length === 0 && <p className="text-sm text-slate-400">لا توجد شيفتات بعد.</p>}
+        {shifts.length === 0 && <p className="text-sm text-slate-400">{t("لا توجد شيفتات بعد.")}</p>}
         {shifts.map((s) => (
           <div key={s._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-bold text-slate-800 text-sm">أ. {s.teacher?.name}</p>
-                {isNow(s) && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">مناوب الآن</span>}
+                <p className="font-bold text-slate-800 text-sm">{language === "ar" ? "أ. " : ""}{s.teacher?.name}</p>
+                {isNow(s) && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">{t("مناوب الآن")}</span>}
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {s.subject} • {new Date(s.startsAt).toLocaleString("ar-EG")} ← {new Date(s.endsAt).toLocaleTimeString("ar-EG")}
+                {t(s.subject)} • {new Date(s.startsAt).toLocaleString(language === "ar" ? "ar-EG" : "en-US")} ← {new Date(s.endsAt).toLocaleTimeString(language === "ar" ? "ar-EG" : "en-US")}
               </p>
             </div>
             <button onClick={() => remove(s._id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg">

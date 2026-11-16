@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Award, Gift, Medal, Star, Plus } from "lucide-react";
 import { api } from "../api.js";
+import { useAdminI18n } from "../i18n.js";
 
 // أنواع المكافآت
 const TYPES = [
@@ -15,6 +16,7 @@ function typeMeta(t) {
 
 // إدارة المكافآت — الأدمن يمنح شارة/جائزة/تكريم لأي مستخدم ويشوف كل الممنوح
 function Rewards() {
+  const { language, t } = useAdminI18n();
   const [rewards, setRewards] = useState([]);
   const [users, setUsers] = useState([]);
   const [userId, setUserId] = useState("");
@@ -37,12 +39,12 @@ function Rewards() {
     e.preventDefault();
     setMsg("");
     if (!userId || !title.trim()) {
-      setMsg("اختر المستخدم واكتب عنوان المكافأة");
+      setMsg(t("اختر المستخدم واكتب عنوان المكافأة"));
       return;
     }
     try {
       await api.grantReward({ user: userId, title: title.trim(), type, note: note.trim() });
-      setMsg("تم منح المكافأة ✅");
+      setMsg(t("تم منح المكافأة ✅"));
       setTitle("");
       setNote("");
       setUserId("");
@@ -59,46 +61,46 @@ function Rewards() {
     <div className="max-w-5xl">
       <div className="flex items-center gap-2 mb-1">
         <Star className="w-5 h-5 text-blue-600" />
-        <h1 className="text-xl font-extrabold text-slate-800">إدارة الجوائز والمكافآت</h1>
+        <h1 className="text-xl font-extrabold text-slate-800">{t("إدارة الجوائز والمكافآت")}</h1>
       </div>
-      <p className="text-sm text-slate-400 mb-5">حفّز المتفوقين وكافئ جهودهم — امنح شارة أو جائزة أو تكريم.</p>
+      <p className="text-sm text-slate-400 mb-5">{t("حفّز المتفوقين وكافئ جهودهم — امنح شارة أو جائزة أو تكريم.")}</p>
 
       {msg && <p className="text-sm bg-blue-50 text-blue-700 rounded-lg p-2 mb-4">{msg}</p>}
 
       {/* نموذج المنح */}
       <form onSubmit={grant} className={`${card} p-4 mb-6 grid sm:grid-cols-4 gap-3 items-end`}>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">المستخدم</label>
+          <label className="block text-xs font-bold text-slate-500 mb-1">{t("المستخدم")}</label>
           <select value={userId} onChange={(e) => setUserId(e.target.value)} className={input}>
-            <option value="">اختر مستخدم…</option>
+            <option value="">{t("اختر مستخدم…")}</option>
             {users.map((u) => (
-              <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+              <option key={u.id} value={u.id}>{u.name} ({t(u.role === "teacher" ? "مدرس" : u.role === "admin" ? "أدمن" : "طالب")})</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">العنوان</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className={input} placeholder="وسام التميز" />
+          <label className="block text-xs font-bold text-slate-500 mb-1">{t("العنوان")}</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className={input} placeholder={t("وسام التميز")} />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">النوع</label>
+          <label className="block text-xs font-bold text-slate-500 mb-1">{t("النوع")}</label>
           <select value={type} onChange={(e) => setType(e.target.value)} className={input}>
-            {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            {TYPES.map((item) => <option key={item.value} value={item.value}>{t(item.label)}</option>)}
           </select>
         </div>
         <button className="bg-blue-600 text-white font-bold text-sm py-2 rounded-xl flex items-center justify-center gap-1">
-          <Plus className="w-4 h-4" /> امنح الآن
+          <Plus className="w-4 h-4" /> {t("امنح الآن")}
         </button>
         <div className="sm:col-span-4">
-          <input value={note} onChange={(e) => setNote(e.target.value)} className={input} placeholder="ملاحظة (اختياري)" />
+          <input value={note} onChange={(e) => setNote(e.target.value)} className={input} placeholder={t("ملاحظة (اختياري)")} />
         </div>
       </form>
 
       {/* قائمة المكافآت الممنوحة */}
       <div className={`${card} overflow-hidden`}>
-        <div className="px-4 py-3 border-b border-slate-100 font-bold text-slate-700 text-sm">أحدث المكافآت الممنوحة</div>
-        {loading && <p className="p-4 text-sm text-slate-400">جاري التحميل…</p>}
-        {!loading && rewards.length === 0 && <p className="p-6 text-center text-sm text-slate-400">لم تُمنح أي مكافآت بعد.</p>}
+        <div className="px-4 py-3 border-b border-slate-100 font-bold text-slate-700 text-sm">{t("أحدث المكافآت الممنوحة")}</div>
+        {loading && <p className="p-4 text-sm text-slate-400">{t("جاري التحميل…")}</p>}
+        {!loading && rewards.length === 0 && <p className="p-6 text-center text-sm text-slate-400">{t("لم تُمنح أي مكافآت بعد.")}</p>}
         <div className="divide-y divide-slate-50">
           {rewards.map((r) => {
             const meta = typeMeta(r.type);
@@ -111,10 +113,10 @@ function Rewards() {
                 <div className="flex-1">
                   <p className="font-bold text-slate-800 text-sm">{r.title}</p>
                   <p className="text-[11px] text-slate-400">
-                    {r.user?.name || "—"} • {meta.label}{r.note ? " • " + r.note : ""}
+                    {r.user?.name || "—"} • {t(meta.label)}{r.note ? " • " + r.note : ""}
                   </p>
                 </div>
-                <span className="text-[10px] text-slate-400">{r.createdAt ? new Date(r.createdAt).toLocaleDateString("ar-EG") : ""}</span>
+                <span className="text-[10px] text-slate-400">{r.createdAt ? new Date(r.createdAt).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US") : ""}</span>
               </div>
             );
           })}

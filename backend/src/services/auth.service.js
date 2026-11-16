@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const subjectService = require('./subject.service');
 const ApiError = require('../utils/ApiError');
 
 // ===== طبقة الخدمات (Service) =====
@@ -38,10 +39,19 @@ function makeTokens(user) {
 
 // ===== تسجيل حساب جديد =====
 async function register(data) {
-  const { name, email, password, role, grade, subject, schoolCode, nationalId } = data;
+  const { name, email, password, role, grade, grades, subject, schoolCode, nationalId } = data;
+  const accountRole = role || 'student';
+  if (!['student', 'teacher'].includes(accountRole)) {
+    throw new ApiError(403, 'لا يمكن إنشاء هذا النوع من الحسابات من التسجيل العام');
+  }
+  const teacherGrades = accountRole === 'teacher' && Array.isArray(grades) ? grades : [];
 
   const exists = await User.findOne({ email: email.toLowerCase() });
   if (exists) throw new ApiError(409, 'البريد مسجّل من قبل');
+
+  if (accountRole === 'teacher') {
+    await subjectService.ensureTeacherSubjects(subject, teacherGrades);
+  }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -49,9 +59,10 @@ async function register(data) {
     name,
     email: email.toLowerCase(),
     password: hashedPassword,
-    role: role || 'student',
-    grade,
-    subject: role === 'teacher' ? subject : undefined, // التخصّص للمدرس بس
+    role: accountRole,
+    grade: accountRole === 'teacher' ? teacherGrades[0] : grade,
+    grades: teacherGrades,
+    subject: accountRole === 'teacher' ? subject : undefined, // التخصّص للمدرس بس
     schoolCode,
     nationalId,
   });
@@ -107,7 +118,7 @@ async function getMe(userId) {
 // ===== تعديل بياناتي =====
 // بيقبل: الاسم · كلمة المرور · نبذة · الصف · كود المدرسة · التفضيلات (إشعارات/خصوصية/لغة/مظهر)
 async function updateMe(userId, data, avatarUrl) {
-  const { name, currentPassword, password, bio, grade, schoolCode, preferences, avatarPosition } = data;
+  const { name, currentPassword, password, bio, grade, grades, schoolCode, preferences, avatarPosition } = data;
 
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, 'المستخدم غير موجود');
@@ -121,6 +132,11 @@ async function updateMe(userId, data, avatarUrl) {
   }
   if (bio !== undefined) user.bio = bio;
   if (grade !== undefined) user.grade = grade;
+  if (user.role === 'teacher' && grades !== undefined) {
+    user.grades = typeof grades === 'string' ? JSON.parse(grades) : grades;
+    user.grade = user.grades[0];
+    await subjectService.ensureTeacherSubjects(user.subject, user.grades);
+  }
   if (schoolCode !== undefined) user.schoolCode = schoolCode;
   if (avatarUrl) user.avatarUrl = avatarUrl;
   const parsedAvatarPosition = typeof avatarPosition === 'string'
@@ -136,7 +152,12 @@ async function updateMe(userId, data, avatarUrl) {
   // التفضيلات: دمج جزئي (نحدّث اللي اتبعت بس ونسيب الباقي زي ما هو)
   if (preferences && typeof preferences === 'object') {
     if (preferences.notifications) {
-      user.preferences.notifications = { ...user.preferences.notifications.toObject?.() ?? user.preferences.notifications, ...preferences.notifications };
+      user.preferences.notifications = {
+        ...(user.preferences.notifications.toObject?.() ?? user.preferences.notifications),
+        ...preferences.notifications,
+        newMaterial: true,
+        liveLesson: true,
+      };
     }
     if (preferences.privacy) {
       user.preferences.privacy = { ...user.preferences.privacy.toObject?.() ?? user.preferences.privacy, ...preferences.privacy };

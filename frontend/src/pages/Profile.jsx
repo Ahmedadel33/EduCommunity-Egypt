@@ -3,6 +3,7 @@ import { Trophy, Award, BookOpen, Target, Star, Calendar, CheckCircle, Beaker, P
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { toast } from "sonner";
+import { useI18n } from "../lib/i18n";
 
 // الشارات المتاحة في المنصة
 const defaultBadges = [
@@ -16,6 +17,7 @@ const defaultBadges = [
 // الملف الشخصي — بالالتزام بتصميم الفيجما
 const Profile = () => {
   const { user } = useAuth();
+  const { language, t } = useI18n();
   const [completedChallenges, setCompletedChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,14 +30,14 @@ const Profile = () => {
       const mapped = subsRes.submissions.map((sub) => {
         const ch = chMap.get(sub.challengeId);
         return {
-          title: ch ? ch.title : "تحدي غير معروف",
+          title: ch ? ch.title : t("تحدي غير معروف"),
           points: ch ? ch.points : 0,
-          date: new Date(sub.submittedAt).toLocaleDateString("ar-EG", { day: "numeric", month: "long" }),
+          date: new Date(sub.submittedAt).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", { day: "numeric", month: "long" }),
         };
       });
       setCompletedChallenges(mapped);
     } catch (e) {
-      toast.error(e.message || "حدث خطأ أثناء تحميل بيانات الملف الشخصي");
+      toast.error(e.message || t("حدث خطأ أثناء تحميل بيانات الملف الشخصي"));
     } finally {
       setLoading(false);
     }
@@ -79,8 +81,8 @@ const Profile = () => {
     return (
       <div className={`max-w-md mx-auto text-center py-12 px-6 ${card}`}>
         <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto" />
-        <h2 className="text-xl font-extrabold text-slate-800 mt-4">الرجاء تسجيل الدخول</h2>
-        <p className="text-sm text-slate-400 mt-2">الملف الشخصي متوفر للأعضاء المسجلين فقط.</p>
+        <h2 className="text-xl font-extrabold text-slate-800 mt-4">{t("الرجاء تسجيل الدخول")}</h2>
+        <p className="text-sm text-slate-400 mt-2">{t("الملف الشخصي متوفر للأعضاء المسجلين فقط.")}</p>
       </div>
     );
   }
@@ -96,7 +98,7 @@ const Profile = () => {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div dir={language === "ar" ? "rtl" : "ltr"} className="max-w-3xl mx-auto space-y-5">
       {/* كارت البيانات الأساسية */}
       <div className={`${card} overflow-hidden`}>
         <div className="h-28 bg-blue-600" />
@@ -105,23 +107,23 @@ const Profile = () => {
             <div className="w-20 h-20 rounded-2xl bg-teal-500 flex items-center justify-center text-2xl font-extrabold text-white border-4 border-white shadow-sm shrink-0">
               {user.name.charAt(0)}
             </div>
-            <div className="flex-1 pt-12 min-w-0 text-right">
+            <div className={`flex-1 pt-12 min-w-0 ${language === "ar" ? "text-right" : "text-left"}`}>
               <h1 className="text-xl font-extrabold text-slate-800 truncate">{user.name}</h1>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-400 mt-1">
                 {user.grade && (
                   <span className="flex items-center gap-1">
-                    <GraduationCap className="w-4 h-4 text-blue-600" /> {getGradeLabel(user.grade)}
+                    <GraduationCap className="w-4 h-4 text-blue-600" /> {t(getGradeLabel(user.grade))}
                   </span>
                 )}
                 <span className="flex items-center gap-1">
-                  <School className="w-4 h-4 text-blue-600" /> {user.schoolCode ? `مدرسة: ${user.schoolCode}` : "لا توجد مدرسة مضافة"}
+                  <School className="w-4 h-4 text-blue-600" /> {user.schoolCode ? `${t("مدرسة:")} ${user.schoolCode}` : t("لا توجد مدرسة مضافة")}
                 </span>
-                <span className="rounded-full text-[10px] font-bold px-2 py-0.5 bg-[#EEF2FF] text-blue-700">{getRoleLabel(user.role)}</span>
+                <span className="rounded-full text-[10px] font-bold px-2 py-0.5 bg-[#EEF2FF] text-blue-700">{t(getRoleLabel(user.role))}</span>
               </div>
             </div>
             {/* النقاط */}
             <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-sm font-bold mt-4 sm:mt-0 shrink-0">
-              <Trophy className="w-4 h-4 text-amber-500" /> {points} نقطة
+              <Trophy className="w-4 h-4 text-amber-500" /> {points} {t("نقطة")}
             </div>
           </div>
         </div>
@@ -131,14 +133,14 @@ const Profile = () => {
         {/* المهارات التراكمية */}
         <div className={`${card} p-5`}>
           <h2 className="font-extrabold text-slate-800 flex items-center justify-end gap-2 mb-4">
-            المهارات التراكمية <Target className="w-5 h-5 text-blue-600" />
+            {t("المهارات التراكمية")} <Target className="w-5 h-5 text-blue-600" />
           </h2>
           <div className="space-y-3">
             {skills.map((skill) => (
               <div key={skill.name}>
                 <div className="flex justify-between text-xs font-bold mb-1">
                   <span className="text-blue-600">{skill.level}%</span>
-                  <span className="text-slate-600">{skill.name}</span>
+                  <span className="text-slate-600">{t(skill.name)}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                   <div className="h-full bg-blue-600" style={{ width: `${skill.level}%` }} />
@@ -151,7 +153,7 @@ const Profile = () => {
         {/* شارات التكريم */}
         <div className={`${card} p-5`}>
           <h2 className="font-extrabold text-slate-800 flex items-center justify-end gap-2 mb-4">
-            شارات التكريم <Award className="w-5 h-5 text-amber-500" />
+            {t("شارات التكريم")} <Award className="w-5 h-5 text-amber-500" />
           </h2>
           <div className="grid grid-cols-3 gap-3">
             {defaultBadges.map((badge) => {
@@ -163,7 +165,7 @@ const Profile = () => {
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl text-center ${earned ? "bg-amber-100 border border-amber-200" : "bg-[#F5F7FF] opacity-40"}`}
                 >
                   <Icon className={`w-7 h-7 ${earned ? "text-amber-500" : "text-slate-400"}`} />
-                  <span className="text-[11px] font-bold text-slate-600">{badge.name}</span>
+                  <span className="text-[11px] font-bold text-slate-600">{t(badge.name)}</span>
                 </div>
               );
             })}
@@ -174,26 +176,26 @@ const Profile = () => {
       {/* التحديات المكتملة */}
       <div className={`${card} p-5`}>
         <h2 className="font-extrabold text-slate-800 flex items-center justify-end gap-2 mb-4">
-          التحديات المكتملة <CheckCircle className="w-5 h-5 text-teal-500" />
+          {t("التحديات المكتملة")} <CheckCircle className="w-5 h-5 text-teal-500" />
         </h2>
         {loading ? (
-          <p className="text-sm text-slate-400 text-center py-4">جاري تحميل التحديات المكتملة...</p>
+          <p className="text-sm text-slate-400 text-center py-4">{t("جاري تحميل التحديات المكتملة...")}</p>
         ) : completedChallenges.length === 0 ? (
           <p className="text-sm text-slate-400 bg-[#F5F7FF] p-4 rounded-xl text-center">
-            لم تقم بحل أي تحديات بعد. انطلق إلى صفحة التحديات وابدأ المنافسة!
+            {t("لم تقم بحل أي تحديات بعد. انطلق إلى صفحة التحديات وابدأ المنافسة!")}
           </p>
         ) : (
           <div className="space-y-2">
             {completedChallenges.map((ch, idx) => (
               <div key={idx} className="flex items-center gap-3 p-3 bg-[#F5F7FF] rounded-xl">
                 <BookOpen className="w-5 h-5 text-blue-600 shrink-0" />
-                <div className="flex-1 min-w-0 text-right">
+                <div className={`flex-1 min-w-0 ${language === "ar" ? "text-right" : "text-left"}`}>
                   <p className="text-sm font-bold text-slate-800">{ch.title}</p>
                   <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" /> تم الحل في: {ch.date}
+                    <Calendar className="w-3 h-3" /> {t("تم الحل في:")} {ch.date}
                   </p>
                 </div>
-                <span className="text-sm font-bold text-amber-500 shrink-0">+{ch.points} نقطة</span>
+                <span className="text-sm font-bold text-amber-500 shrink-0">+{ch.points} {t("نقطة")}</span>
               </div>
             ))}
           </div>

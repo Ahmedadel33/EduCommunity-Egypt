@@ -16,16 +16,16 @@ function applyPreferences(preferences = {}) {
   localStorage.setItem("language", language);
   localStorage.setItem("theme", theme);
   localStorage.setItem("fontSize", fontSize);
+  return language;
 }
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);      // بيانات المستخدم الحالي
   const [loading, setLoading] = useState(true); // بننتظر لحد ما نتأكد من الدخول
-
-  useEffect(() => { applyPreferences(); }, []);
+  const [language, setLanguage] = useState(() => localStorage.getItem("language") || "ar");
 
   useEffect(() => {
-    applyPreferences(user?.preferences);
+    setLanguage(applyPreferences(user?.preferences));
   }, [user]);
 
   // أول ما التطبيق يفتح: لو فيه توكن محفوظ، نجيب بيانات المستخدم
@@ -67,6 +67,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  function changeLanguage(nextLanguage) {
+    if (nextLanguage !== "ar" && nextLanguage !== "en") return;
+    setLanguage(applyPreferences({ ...user?.preferences, language: nextLanguage }));
+    setUser((current) => current
+      ? { ...current, preferences: { ...current.preferences, language: nextLanguage } }
+      : current);
+  }
+
   // نحدّث بيانات المستخدم (مثلاً بعد ما ياخد نقاط)
   async function refreshUser() {
     try {
@@ -78,7 +86,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, applyPreferences }}>
+    <AuthContext.Provider value={{ user, loading, language, changeLanguage, login, register, logout, refreshUser, applyPreferences }}>
       {children}
     </AuthContext.Provider>
   );

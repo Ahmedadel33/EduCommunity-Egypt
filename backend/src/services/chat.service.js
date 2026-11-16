@@ -28,7 +28,6 @@ async function getRoomAccess(room, user) {
     return Boolean(student.grade && teacher.grades?.includes(student.grade));
   }
 
-  if (requester.role === 'student') return room === requester.grade;
   if (requester.role === 'teacher') return requester.grades?.includes(room);
   return false;
 }

@@ -6,6 +6,7 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { gradeLabel } from "../../lib/grades";
+import { useI18n } from "../../lib/i18n";
 
 // عنوان الباك عشان نكمّل روابط المرفقات المحلية (/uploads/..)
 const BACKEND = (import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "");
@@ -17,10 +18,12 @@ function fileUrl(u) {
 // شات الصف — لحظي عبر Socket.IO + تخزين الرسائل + مرفقات (صوت/صورة/ملف)
 function ChatPage() {
   const { user } = useAuth();
+  const { language, t } = useI18n();
   const socket = useSocket();
   const [searchParams] = useSearchParams();
-  const [room, setRoom] = useState(user?.grade || user?.grades?.[0] || "sec-1");
+  const [room, setRoom] = useState(user?.role === "student" ? "" : user?.grade || user?.grades?.[0] || "");
   const [contacts, setContacts] = useState([]);
+  const [contactMessage, setContactMessage] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
@@ -33,38 +36,59 @@ function ChatPage() {
   const chunksRef = useRef([]);
 
   const isStudent = user?.role === "student";
-  const isGroupRoom = !room.startsWith("private:");
+  const isGroupRoom = Boolean(room) && !room.startsWith("private:");
   const activeContact = contacts.find((contact) => contact.room === room);
 
   useEffect(() => {
+    let active = true;
     api.getChatContacts().then((data) => {
+      if (!active) return;
       const nextContacts = isStudent ? data.teachers || [] : data.students || [];
       setContacts(nextContacts);
       const requestedTeacher = searchParams.get("teacher");
-      const teacher = isStudent && requestedTeacher
-        ? nextContacts.find((contact) => String(contact.id) === requestedTeacher)
-        : null;
-      if (teacher) setRoom(teacher.room);
-    }).catch(() => {});
-  }, [isStudent, searchParams]);
+      if (isStudent) {
+        const teacher = requestedTeacher
+          ? nextContacts.find((contact) => String(contact.id) === requestedTeacher)
+          : nextContacts[0];
+        setRoom(teacher?.room || "");
+        setContactMessage(teacher ? "" : requestedTeacher
+          ? "هذا المعلم غير متاح لصفك."
+          : "لا يوجد معلمون متاحون لمحادثتك.");
+      }
+    }).catch(() => {
+      if (active && isStudent) {
+        setRoom("");
+        setContactMessage("تعذر تحميل قائمة المعلمين.");
+      }
+    });
+    return () => { active = false; };
+  }, [isStudent, searchParams, user?.id]);
 
   useEffect(() => {
-    const defaultRoom = user?.grade || user?.grades?.[0];
-    if (defaultRoom) setRoom(defaultRoom);
-  }, [user?.grade, user?.grades]);
+    if (user?.role === "teacher") {
+      const defaultRoom = user.grades?.[0] || user.grade || "";
+      setRoom((current) => current.startsWith("private:") ? current : defaultRoom);
+    } else if (isStudent && room && !room.startsWith("private:")) {
+      setRoom("");
+    }
+  }, [user?.role, user?.grade, user?.grades, isStudent, room]);
 
   // (1) نجيب سجل الرسائل المخزّنة كل ما نغيّر الغرفة
   useEffect(() => {
+    if (!room) {
+      setMessages([]);
+      return;
+    }
     api.getMessages(room).then((data) => setMessages(data.messages || [])).catch(() => {});
   }, [room]);
 
   // (2) الـ Socket: ندخل الغرفة ونسمع الأحداث
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !room) return;
     socket.emit("join_room", room);
     const onNewMessage = (m) => { if (m.room === room) setMessages((prev) => [...prev, m]); };
     const onTyping = ({ name }) => { setTypingName(name); setTimeout(() => setTypingName(""), 2000); };
-    const onSocketError = (message) => toast.error(message || "تعذر إرسال الرسالة");
+    const onSocketError = (message) => toast.error(message || t("تعذر إرسال الرسالة"));
     socket.on("new_message", onNewMessage);
     socket.on("user_typing", onTyping);
     socket.on("error_message", onSocketError);
@@ -114,7 +138,7 @@ function ChatPage() {
       const res = await api.uploadChatFile(fd);
       emitMessage({ kind: kindOf(res.type), attachmentUrl: res.url, attachmentName: res.name, attachmentType: res.type });
     } catch (err) {
-      toast.error(err.message || "فشل رفع الملف");
+      toast.error(err.message || t("فشل رفع الملف"));
     }
     setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
@@ -141,7 +165,7 @@ function ChatPage() {
           const res = await api.uploadChatFile(fd);
           emitMessage({ kind: "voice", attachmentUrl: res.url, attachmentName: res.name, attachmentType: res.type });
         } catch (err) {
-          toast.error(err.message || "فشل رفع التسجيل");
+          toast.error(err.message || t("فشل رفع التسجيل"));
         }
         setUploading(false);
       };
@@ -149,7 +173,7 @@ function ChatPage() {
       recorderRef.current = rec;
       setRecording(true);
     } catch (err) {
-      toast.error("مش قادر أوصل للميكروفون — اسمح بالإذن");
+      toast.error(t("مش قادر أوصل للميكروفون — اسمح بالإذن"));
     }
   }
 
@@ -166,7 +190,7 @@ function ChatPage() {
         <a href={fileUrl(m.attachmentUrl)} target="_blank" rel="noreferrer" download
           className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${mine ? "bg-white/15" : "bg-white"}`}>
           <FileText className="w-5 h-5 shrink-0" />
-          <span className="text-xs truncate max-w-[160px]">{m.attachmentName || "ملف"}</span>
+          <span className="text-xs truncate max-w-[160px]">{m.attachmentName || t("ملف")}</span>
           <Download className="w-4 h-4 shrink-0" />
         </a>
       );
@@ -176,12 +200,12 @@ function ChatPage() {
 
   return (
     // ارتفاع متجاوب: بيملأ الشاشة تحت الهيدر على الموبايل والديسكتوب
-    <div className="max-w-3xl mx-auto flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100dvh-8rem)]">
+    <div dir={language === "ar" ? "rtl" : "ltr"} className="max-w-3xl mx-auto flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100dvh-8rem)]">
       {/* الهيدر */}
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0"><MessageSquare className="w-5 h-5" /></div>
-          <div className="min-w-0"><h1 className="text-base sm:text-xl font-extrabold text-slate-800 truncate">{isGroupRoom ? "شات المجموعة" : isStudent ? `محادثة مع أ. ${activeContact?.name || "المدرس"}` : `محادثة مع ${activeContact?.name || "الطالب"}`}</h1><p className="text-[11px] sm:text-xs text-slate-400 truncate">{isGroupRoom ? `تكلّم مع زملائك في ${gradeLabel(room)}` : isStudent ? activeContact?.subject : gradeLabel(activeContact?.grade)}</p></div>
+          <div className="min-w-0"><h1 className="text-base sm:text-xl font-extrabold text-slate-800 truncate">{!room && isStudent ? t("اختر معلمًا للمراسلة") : isGroupRoom ? t("شات المجموعة") : language === "en" ? `Chat with ${activeContact?.name || (isStudent ? "the teacher" : "the student")}` : isStudent ? `محادثة مع أ. ${activeContact?.name || "المدرس"}` : `محادثة مع ${activeContact?.name || "الطالب"}`}</h1><p className="text-[11px] sm:text-xs text-slate-400 truncate">{isGroupRoom ? `${t("تكلّم مع زملائك في")} ${t(gradeLabel(room))}` : isStudent ? t(activeContact?.subject) : t(gradeLabel(activeContact?.grade))}</p></div>
         </div>
       </div>
 
@@ -190,22 +214,22 @@ function ChatPage() {
         <form onSubmit={(e) => { e.preventDefault(); api.getChatContacts({ search: studentSearch }).then((data) => setContacts(data.students || [])).catch(() => {}); }} className="flex gap-2 mb-2">
           <div className="relative flex-1">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)} placeholder="ابحث عن طالب بالاسم أو البريد" className="w-full bg-white border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs outline-none focus:border-blue-400" />
+            <input value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)} placeholder={t("ابحث عن طالب بالاسم أو البريد")} className="w-full bg-white border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs outline-none focus:border-blue-400" />
           </div>
-          <button type="submit" className="rounded-xl bg-blue-600 text-white px-3 text-xs font-bold">بحث</button>
+          <button type="submit" className="rounded-xl bg-blue-600 text-white px-3 text-xs font-bold">{t("بحث")}</button>
         </form>
       )}
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {(isStudent ? [user?.grade] : (user?.grades || [])).filter(Boolean).map((group) => (
+        {(user?.role === "teacher" ? (user?.grades || []) : []).filter(Boolean).map((group) => (
           <button key={group} onClick={() => setRoom(group)} className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ${room === group ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-600"}`}>
-            <Users className="w-4 h-4" /> {isStudent ? "مجموعة الصف" : gradeLabel(group)}
+            <Users className="w-4 h-4" /> {t(gradeLabel(group))}
           </button>
         ))}
         {contacts.map((contact) => (
           <button key={contact.id} onClick={() => setRoom(contact.room)} className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ${room === contact.room ? "bg-teal-500 text-white" : "bg-white border border-slate-200 text-slate-600"}`}>
             <UserRound className="w-4 h-4" />
-            <span>{isStudent ? `أ. ${contact.name}` : contact.name}</span>
+            <span>{isStudent && language === "ar" ? `أ. ${contact.name}` : contact.name}</span>
             {isStudent && contact.onDuty && <span className="w-1.5 h-1.5 rounded-full bg-green-300" />}
           </button>
         ))}
@@ -213,7 +237,8 @@ function ChatPage() {
 
       {/* الرسائل — بتاخد المساحة المتبقية وتعمل scroll */}
       <div className="flex-1 min-h-0 bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 overflow-y-auto flex flex-col gap-2.5">
-        {messages.length === 0 && <p className="text-center text-slate-400 my-auto text-sm">لا توجد رسائل بعد. ابدأ الكلام!</p>}
+        {!room && isStudent && <p className="text-center text-slate-400 my-auto text-sm">{t(contactMessage || "لا يوجد معلمون متاحون لمحادثتك.")}</p>}
+        {room && messages.length === 0 && <p className="text-center text-slate-400 my-auto text-sm">{t("لا توجد رسائل بعد. ابدأ الكلام!")}</p>}
         {messages.map((m) => {
           const mine = m.user?.id === user?.id;
           return (
@@ -221,35 +246,35 @@ function ChatPage() {
               <div className={`rounded-2xl px-3 py-2 ${mine ? "bg-blue-600 text-white" : "bg-[#F1F5F9] text-slate-800"}`}>
                 {!mine && <p className="text-[11px] font-bold mb-0.5 text-slate-500">{m.user?.name}</p>}
                 {renderBody(m, mine)}
-                <p className={`text-[9px] mt-1 ${mine ? "text-white/60" : "text-slate-400"}`}>{m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : ""}</p>
+                <p className={`text-[9px] mt-1 ${mine ? "text-white/60" : "text-slate-400"}`}>{m.createdAt ? new Date(m.createdAt).toLocaleTimeString(language === "ar" ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" }) : ""}</p>
               </div>
             </div>
           );
         })}
-        {typingName && <p className="text-[11px] text-slate-400 self-end">{typingName} بيكتب...</p>}
+        {typingName && <p className="text-[11px] text-slate-400 self-end">{language === "en" ? `${typingName} is typing...` : `${typingName} بيكتب...`}</p>}
         <div ref={bottomRef} />
       </div>
 
       {/* شريط الإدخال + المرفقات */}
-      <form onSubmit={sendText} className="flex items-center gap-1.5 sm:gap-2 mt-3">
+      {room && <form onSubmit={sendText} className="flex items-center gap-1.5 sm:gap-2 mt-3">
         {/* رفع ملف بأي نوع */}
         <input ref={fileRef} type="file" onChange={handleFile} className="hidden" />
         <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-          className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 disabled:opacity-50 shrink-0" title="إرفاق ملف">
+          className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-blue-600 disabled:opacity-50 shrink-0" title={t("إرفاق ملف")}>
           <Paperclip className="w-4 h-4" />
         </button>
         {/* تسجيل صوتي */}
         <button type="button" onClick={toggleRecording} disabled={uploading}
           className={`p-2.5 rounded-xl border shrink-0 ${recording ? "bg-red-500 text-white border-red-500 animate-pulse" : "bg-white border-slate-200 text-slate-500 hover:text-blue-600"}`}
-          title={recording ? "إيقاف التسجيل" : "تسجيل صوتي"}>
+          title={recording ? t("إيقاف التسجيل") : t("تسجيل صوتي")}>
           {recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
         </button>
-        <input value={text} onChange={handleTyping} placeholder={uploading ? "جاري الرفع..." : recording ? "بيسجّل..." : "اكتب رسالتك..."}
+        <input value={text} onChange={handleTyping} placeholder={uploading ? t("جاري الرفع...") : recording ? t("بيسجّل...") : t("اكتب رسالتك...")}
           className="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
         <button type="submit" className="bg-blue-600 text-white font-bold px-3 sm:px-5 py-2.5 rounded-xl flex items-center gap-1.5 shrink-0">
-          <Send className="w-4 h-4" /> <span className="hidden sm:inline">إرسال</span>
+          <Send className="w-4 h-4" /> <span className="hidden sm:inline">{t("إرسال")}</span>
         </button>
-      </form>
+      </form>}
     </div>
   );
 }

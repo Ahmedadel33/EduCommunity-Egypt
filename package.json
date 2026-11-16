@@ -1,0 +1,10 @@
+{
+  "name": "educommunity-egypt",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names backend,frontend,admin \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\" \"npm --prefix admin run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.5"
+  }
+}

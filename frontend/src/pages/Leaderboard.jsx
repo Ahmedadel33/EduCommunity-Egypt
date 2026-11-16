@@ -4,6 +4,7 @@ import { Crown, Trophy, Medal, Award } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { gradeLabel } from "../lib/grades";
+import { useI18n } from "../lib/i18n";
 
 // ===== لوحة الصدارة — مطابقة لتصميم الفيجما (podium + فلاتر + جدول + شريطك) =====
 const card = "bg-white rounded-2xl border border-slate-100 shadow-sm";
@@ -11,6 +12,7 @@ const TIMES = [{ v: "all", l: "كل الأوقات" }, { v: "month", l: "شهر�
 
 function Leaderboard() {
   const { user } = useAuth();
+  const { language, t } = useI18n();
   const [time, setTime] = useState("all");
   const [scope, setScope] = useState("egypt"); // egypt = كل مصر · mine = صفّي
 
@@ -37,22 +39,22 @@ function Leaderboard() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5 pb-24" dir="rtl">
+    <div className="max-w-4xl mx-auto space-y-5 pb-24" dir={language === "ar" ? "rtl" : "ltr"}>
       {/* الهيدر + الفلاتر */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800">لوحة الصدارة</h1>
-          <p className="text-sm text-slate-400 mt-1">تنافس مع زملائك وكن من النخبة.</p>
+          <h1 className="text-2xl font-extrabold text-slate-800">{t("لوحة الصدارة")}</h1>
+          <p className="text-sm text-slate-400 mt-1">{t("تنافس مع زملائك وكن من النخبة.")}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex bg-slate-100 rounded-xl p-1">
             {[{ v: "egypt", l: "كل مصر" }, { v: "mine", l: "صفّي" }].map((s) => (
-              <button key={s.v} onClick={() => setScope(s.v)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${scope === s.v ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"}`}>{s.l}</button>
+              <button key={s.v} onClick={() => setScope(s.v)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${scope === s.v ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"}`}>{t(s.l)}</button>
             ))}
           </div>
           <div className="flex bg-slate-100 rounded-xl p-1">
             {TIMES.map((t) => (
-              <button key={t.v} onClick={() => setTime(t.v)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${time === t.v ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"}`}>{t.l}</button>
+              <button key={t.v} onClick={() => setTime(t.v)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${time === t.v ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"}`}>{language === "en" ? ({ all: "All time", month: "Monthly", week: "Weekly" }[t.v]) : t.l}</button>
             ))}
           </div>
         </div>
@@ -72,7 +74,7 @@ function Leaderboard() {
                   <div className={`w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-extrabold ring-4 ${st.ring}`}>{s.name?.charAt(0)}</div>
                   <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full ${st.badge} text-white flex items-center justify-center text-[11px] font-extrabold border-2 border-white`}>{st.place}</span>
                 </div>
-                <p className="text-sm font-extrabold text-slate-800 mt-3 text-center truncate max-w-full">{s.name}{me && " (أنت)"}</p>
+                <p className="text-sm font-extrabold text-slate-800 mt-3 text-center truncate max-w-full">{s.name}{me && (language === "en" ? " (You)" : " (أنت)")}</p>
                 <p className={`text-sm font-extrabold ${st.xpColor}`}>{s.points} XP</p>
                 <div className={`w-full ${st.h} mt-2 rounded-t-2xl flex items-start justify-center pt-3 ${st.place === 1 ? "bg-amber-400" : st.place === 2 ? "bg-slate-300" : "bg-orange-400"}`}>
                   <Icon className="w-7 h-7 text-white/90" />
@@ -86,12 +88,12 @@ function Leaderboard() {
       {/* الجدول */}
       <div className={`${card} overflow-hidden`}>
         <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-slate-50 text-[11px] font-bold text-slate-400">
-          <span className="col-span-2">الترتيب</span>
-          <span className="col-span-6">الطالب</span>
-          <span className="col-span-2 text-center">الصف</span>
+          <span className="col-span-2">{t("الترتيب")}</span>
+          <span className="col-span-6">{t("الطالب")}</span>
+          <span className="col-span-2 text-center">{t("الصف")}</span>
           <span className="col-span-2 text-left">XP</span>
         </div>
-        {list.length === 0 && <p className="text-sm text-slate-400 text-center py-10">لا يوجد طلاب.</p>}
+        {list.length === 0 && <p className="text-sm text-slate-400 text-center py-10">{t("لا يوجد طلاب.")}</p>}
         {rest.map((s, i) => {
           const me = s.id === user?.id;
           return (
@@ -99,9 +101,9 @@ function Leaderboard() {
               <span className="col-span-2 font-extrabold text-slate-500 text-sm">#{i + 4}</span>
               <div className="col-span-6 flex items-center gap-2 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">{s.name?.charAt(0)}</div>
-                <span className="font-bold text-slate-800 text-sm truncate">{s.name}{me && <span className="text-[10px] text-blue-600"> (أنت)</span>}</span>
+                <span className="font-bold text-slate-800 text-sm truncate">{s.name}{me && <span className="text-[10px] text-blue-600">{language === "en" ? " (You)" : " (أنت)"}</span>}</span>
               </div>
-              <span className="col-span-2 text-center text-[11px] text-slate-400">{gradeLabel(s.grade)}</span>
+              <span className="col-span-2 text-center text-[11px] text-slate-400">{t(gradeLabel(s.grade))}</span>
               <span className="col-span-2 text-left font-extrabold text-amber-600 text-sm">{s.points}</span>
             </div>
           );
@@ -114,10 +116,10 @@ function Leaderboard() {
           <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-extrabold text-sm">#{myRank}</div>
           <div className="w-9 h-9 rounded-full bg-white/90 text-blue-700 flex items-center justify-center text-xs font-extrabold">{user?.name?.charAt(0)}</div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm truncate">أنت ({user?.name})</p>
-            <p className="text-[11px] text-blue-100">{nextGap > 0 ? `تحتاج ${nextGap} XP للمركز التالي!` : "أنت في الصدارة! 🎉"}</p>
+            <p className="font-bold text-sm truncate">{language === "en" ? "You" : "أنت"} ({user?.name})</p>
+            <p className="text-[11px] text-blue-100">{nextGap > 0 ? language === "en" ? `You need ${nextGap} XP to reach the next rank!` : `تحتاج ${nextGap} XP للمركز التالي!` : t("أنت في الصدارة! 🎉")}</p>
           </div>
-          <span className="font-extrabold text-sm whitespace-nowrap">{(user?.points || 0).toLocaleString("ar")} XP</span>
+          <span className="font-extrabold text-sm whitespace-nowrap">{(user?.points || 0).toLocaleString(language === "ar" ? "ar" : "en-US")} XP</span>
         </div>
       )}
     </div>

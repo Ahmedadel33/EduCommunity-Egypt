@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema(
         newMaterial:  { type: Boolean, default: true },
         liveLesson:   { type: Boolean, default: true },
         challenges:   { type: Boolean, default: true },
+        community:    { type: Boolean, default: true },
         rewards:      { type: Boolean, default: true },
         chat:         { type: Boolean, default: false },
         weeklyDigest: { type: Boolean, default: true },
@@ -47,6 +48,7 @@ const userSchema = new mongoose.Schema(
       theme:    { type: String, default: 'light' },  // light | dark | system
       fontSize: { type: String, default: 'medium' }, // small | medium | large
     },
+    weeklyDigestSentAt: { type: Date },
   },
   { timestamps: true } // يضيف createdAt و updatedAt تلقائياً
 );
@@ -56,6 +58,7 @@ userSchema.set('toJSON', {
   virtuals: true,
   transform: (doc, ret) => {
     delete ret.password;
+    delete ret.weeklyDigestSentAt;
     delete ret._id;
     delete ret.__v;
     return ret;

@@ -11,6 +11,7 @@ import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { GRADES } from "../lib/grades";
 import { resolveMediaUrl } from "../lib/media";
+import { useI18n } from "../lib/i18n";
 
 // ===== التبويبات =====
 const TABS = [
@@ -24,13 +25,18 @@ const TABS = [
 // ===== الحسابات =====
 const inputCls =
   "w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white";
-const labelCls = "block text-xs font-bold text-slate-500 mb-1 text-right";
+const labelCls = "block text-xs font-bold text-slate-500 mb-1 text-start";
 
 /* ─── تبويب الملف الشخصي ─── */
 function ProfileTab({ user, refreshUser }) {
+  const { language, t } = useI18n();
   const [name, setName]           = useState(user?.name || "");
   const [schoolCode, setSchoolCode] = useState(user?.schoolCode || "");
   const [grade, setGrade]         = useState(user?.grade || "");
+  const [teacherGrades, setTeacherGrades] = useState(() => {
+    const savedGrades = user?.grades?.length ? user.grades : user?.grade ? [user.grade] : [];
+    return savedGrades.filter((savedGrade) => GRADES.some((option) => option.value === savedGrade));
+  });
   const [bio, setBio]             = useState(user?.bio || "");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(resolveMediaUrl(user?.avatarUrl));
@@ -40,7 +46,11 @@ function ProfileTab({ user, refreshUser }) {
 
   async function handleSave(e) {
     e.preventDefault();
-    if (!name.trim()) { toast.error("الاسم مطلوب"); return; }
+    if (!name.trim()) { toast.error(t("الاسم مطلوب")); return; }
+    if (user?.role === "teacher" && teacherGrades.length === 0) {
+      toast.error(t("اختر صفًا دراسيًا واحدًا على الأقل"));
+      return;
+    }
     setSaving(true);
     try {
       const formData = new FormData();
@@ -48,15 +58,16 @@ function ProfileTab({ user, refreshUser }) {
       formData.append("bio", bio);
       formData.append("schoolCode", schoolCode);
       if (user?.role !== "teacher") formData.append("grade", grade);
+      else formData.append("grades", JSON.stringify(teacherGrades));
       formData.append("avatarPosition", JSON.stringify(avatarPosition));
       if (avatarFile) formData.append("avatar", avatarFile);
       const res = await api.updateMe(formData);
       if (res.token)        localStorage.setItem("token", res.token);
       if (res.refreshToken) localStorage.setItem("refreshToken", res.refreshToken);
       await refreshUser();
-      toast.success("تم حفظ التغييرات ✅");
+      toast.success(t("تم حفظ التغييرات ✅"));
     } catch (err) {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || t("حدث خطأ"));
     }
     setSaving(false);
   }
@@ -68,11 +79,11 @@ function ProfileTab({ user, refreshUser }) {
     .slice(0, 2);
 
   return (
-    <form onSubmit={handleSave} dir="rtl">
+    <form onSubmit={handleSave} dir={language === "ar" ? "rtl" : "ltr"}>
       {/* صورة الملف الشخصي */}
       <div className="flex flex-col items-start gap-3 mb-6">
-        <h3 className="font-extrabold text-slate-800 text-base">تعديل الصورة الشخصية</h3>
-        <p className="text-xs text-slate-400">توصى بصورة مربعة لا تقل عن 400×400 بكسل.</p>
+        <h3 className="font-extrabold text-slate-800 text-base">{t("تعديل الصورة الشخصية")}</h3>
+        <p className="text-xs text-slate-400">{t("توصى بصورة مربعة لا تقل عن 400×400 بكسل.")}</p>
         <div className="relative w-24 h-24 mt-1">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg">
             {avatarPreview ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" style={{ objectPosition: `${avatarPosition.x}% ${avatarPosition.y}%` }} /> : initials}
@@ -81,17 +92,17 @@ function ProfileTab({ user, refreshUser }) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            title="تغيير الصورة"
+            title={t("تغيير الصورة")}
             className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700 transition"
           >
             <Camera className="w-4 h-4" />
           </button>
         </div>
         {avatarPreview && (
-          <div className="w-full max-w-xs space-y-2" dir="rtl">
-            <label className={labelCls}>موضع الصورة أفقيًا</label>
+          <div className="w-full max-w-xs space-y-2" dir={language === "ar" ? "rtl" : "ltr"}>
+            <label className={labelCls}>{t("موضع الصورة أفقيًا")}</label>
             <input type="range" min="0" max="100" value={avatarPosition.x} onChange={(e) => setAvatarPosition((p) => ({ ...p, x: Number(e.target.value) }))} className="w-full accent-blue-600" />
-            <label className={labelCls}>موضع الصورة رأسيًا</label>
+            <label className={labelCls}>{t("موضع الصورة رأسيًا")}</label>
             <input type="range" min="0" max="100" value={avatarPosition.y} onChange={(e) => setAvatarPosition((p) => ({ ...p, y: Number(e.target.value) }))} className="w-full accent-blue-600" />
           </div>
         )}
@@ -100,50 +111,70 @@ function ProfileTab({ user, refreshUser }) {
       {/* حقول البيانات */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className={labelCls}>الاسم الكامل</label>
+          <label className={labelCls}>{t("الاسم الكامل")}</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             className={inputCls}
-            placeholder="اسمك الكامل"
+            placeholder={t("اسمك الكامل")}
           />
         </div>
         <div>
-          {user?.role !== "teacher" && <label className={labelCls}>الصف الدراسي</label>}
+          {user?.role !== "teacher" && <label className={labelCls}>{t("الصف الدراسي")}</label>}
           {user?.role !== "teacher" && (
           <select
             value={grade}
             onChange={(e) => setGrade(e.target.value)}
             className={inputCls}
           >
-            <option value="">اختر الصف...</option>
+            <option value="">{t("اختر الصف...")}</option>
             {GRADES.map((g) => (
-              <option key={g.value} value={g.value}>{g.label}</option>
+              <option key={g.value} value={g.value}>{t(g.label)}</option>
             ))}
           </select>
           )}
-          {user?.role === "teacher" && <p className="text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-2.5">الصفوف المسندة إليك: {(user.grades || []).join("، ") || "يحددها المسؤول"}</p>}
+          {user?.role === "teacher" && (
+            <fieldset className="mt-4">
+              <legend className={labelCls}>{t("الصفوف التي تدرّسها")}</legend>
+              <p className="text-xs text-slate-400 mb-2">{t("اختر صفًا واحدًا أو أكثر لتظهر لك مواده ودروسه.")}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {GRADES.map((g) => (
+                  <label key={g.value} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={teacherGrades.includes(g.value)}
+                      onChange={() => setTeacherGrades((current) => current.includes(g.value)
+                        ? current.filter((value) => value !== g.value)
+                        : [...current, g.value])}
+                      className="accent-blue-600"
+                    />
+                    <span>{t(g.label)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
         </div>
       </div>
 
       <div className="mb-4">
-        <label className={labelCls}>المدرسة</label>
+        <label className={labelCls}>{t("المدرسة")}</label>
         <input
           value={schoolCode}
           onChange={(e) => setSchoolCode(e.target.value)}
           className={inputCls}
-          placeholder="اسم أو كود مدرستك"
+          placeholder={t("اسم أو كود مدرستك")}
         />
       </div>
 
       <div className="mb-6">
-        <label className={labelCls}>نبذة تعريفية</label>
+        <label className={labelCls}>{t("نبذة تعريفية")}</label>
         <textarea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={3}
           className={`${inputCls} resize-none`}
-          placeholder="اكتب نبذة قصيرة عن نفسك..."
+          placeholder={t("اكتب نبذة قصيرة عن نفسك...")}
         />
       </div>
 
@@ -153,7 +184,7 @@ function ProfileTab({ user, refreshUser }) {
         className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl flex items-center gap-2 disabled:opacity-60 transition shadow-sm shadow-blue-200"
       >
         <Save className="w-4 h-4" />
-        {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+        {saving ? t("جاري الحفظ...") : t("حفظ التغييرات")}
       </button>
     </form>
   );
@@ -161,6 +192,7 @@ function ProfileTab({ user, refreshUser }) {
 
 /* ─── تبويب الحساب ─── */
 function AccountTab({ user, logout, navigate }) {
+  const { language, t } = useI18n();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword]         = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -170,53 +202,53 @@ function AccountTab({ user, logout, navigate }) {
   async function handleChangePassword(e) {
     e.preventDefault();
     if (newPassword.length < 6) {
-      toast.error("كلمة المرور يجب ألا تقل عن 6 أحرف");
+      toast.error(t("كلمة المرور يجب ألا تقل عن 6 أحرف"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين");
+      toast.error(t("كلمتا المرور غير متطابقتين"));
       return;
     }
     setSaving(true);
     try {
       await api.updateMe({ currentPassword, password: newPassword });
-      toast.success("تم تغيير كلمة المرور ✅");
+      toast.success(t("تم تغيير كلمة المرور ✅"));
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (err) {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || t("حدث خطأ"));
     }
     setSaving(false);
   }
 
   return (
-    <div dir="rtl" className="space-y-6">
+    <div dir={language === "ar" ? "rtl" : "ltr"} className="space-y-6">
       {/* معلومات الحساب */}
       <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-        <h3 className="font-extrabold text-slate-800 mb-4 text-sm">معلومات الحساب</h3>
+        <h3 className="font-extrabold text-slate-800 mb-4 text-sm">{t("معلومات الحساب")}</h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center py-2 border-b border-slate-100">
             <span className="text-slate-800 text-sm font-medium">{user?.name}</span>
-            <span className="text-xs text-slate-400">الاسم</span>
+            <span className="text-xs text-slate-400">{t("الاسم")}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b border-slate-100">
             <span className="text-slate-800 text-sm font-medium">{user?.email}</span>
-            <span className="text-xs text-slate-400">البريد الإلكتروني</span>
+            <span className="text-xs text-slate-400">{t("البريد الإلكتروني")}</span>
           </div>
           <div className="flex justify-between items-center py-2">
             <span className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-              {user?.role === "teacher" ? "معلم" : user?.role === "admin" ? "مدير النظام" : "طالب"}
+              {t(user?.role === "teacher" ? "معلم" : user?.role === "admin" ? "مدير النظام" : "طالب")}
             </span>
-            <span className="text-xs text-slate-400">الدور</span>
+            <span className="text-xs text-slate-400">{t("الدور")}</span>
           </div>
         </div>
       </div>
 
       {/* تغيير كلمة المرور */}
       <form onSubmit={handleChangePassword}>
-        <h3 className="font-extrabold text-slate-800 mb-4 text-sm">تغيير كلمة المرور</h3>
+        <h3 className="font-extrabold text-slate-800 mb-4 text-sm">{t("تغيير كلمة المرور")}</h3>
         <div className="space-y-3 mb-4">
           <div>
-            <label className={labelCls}>كلمة المرور الحالية</label>
+            <label className={labelCls}>{t("كلمة المرور الحالية")}</label>
             <input
               type="password"
               value={currentPassword}
@@ -226,14 +258,14 @@ function AccountTab({ user, logout, navigate }) {
             />
           </div>
           <div>
-            <label className={labelCls}>كلمة المرور الجديدة</label>
+            <label className={labelCls}>{t("كلمة المرور الجديدة")}</label>
             <div className="relative">
               <input
                 type={showNew ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className={`${inputCls} pl-10`}
-                placeholder="6 أحرف على الأقل"
+                placeholder={t("6 أحرف على الأقل")}
               />
               <button
                 type="button"
@@ -245,13 +277,13 @@ function AccountTab({ user, logout, navigate }) {
             </div>
           </div>
           <div>
-            <label className={labelCls}>تأكيد كلمة المرور</label>
+            <label className={labelCls}>{t("تأكيد كلمة المرور")}</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className={inputCls}
-              placeholder="أعد كتابة كلمة المرور"
+              placeholder={t("أعد كتابة كلمة المرور")}
             />
           </div>
         </div>
@@ -261,18 +293,18 @@ function AccountTab({ user, logout, navigate }) {
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl flex items-center gap-2 disabled:opacity-60 transition"
         >
           <Lock className="w-4 h-4" />
-          {saving ? "جاري الحفظ..." : "تحديث كلمة المرور"}
+          {saving ? t("جاري الحفظ...") : t("تحديث كلمة المرور")}
         </button>
       </form>
 
       {/* تسجيل الخروج */}
       <div className="pt-4 border-t border-slate-100">
-        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">منطقة الخطر</h3>
+        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">{t("منطقة الخطر")}</h3>
         <button
           onClick={() => { logout(); navigate("/"); }}
           className="flex items-center gap-2 text-rose-500 font-bold text-sm border border-rose-200 rounded-xl px-5 py-2.5 hover:bg-rose-50 transition"
         >
-          <LogOut className="w-4 h-4" /> تسجيل الخروج
+          <LogOut className="w-4 h-4" /> {t("تسجيل الخروج")}
         </button>
       </div>
     </div>
@@ -281,8 +313,9 @@ function AccountTab({ user, logout, navigate }) {
 
 /* ─── تبويب الإشعارات ─── */
 function NotificationsTab({ user, refreshUser }) {
+  const { language, t } = useI18n();
   const DEFAULTS = {
-    newMaterial: true, liveLesson: true, challenges: true,
+    newMaterial: true, liveLesson: true, community: true,
     rewards: true, chat: false, weeklyDigest: true,
   };
   // نحمّل القيم المحفوظة من المستخدم (مع fallback للافتراضي)
@@ -296,28 +329,31 @@ function NotificationsTab({ user, refreshUser }) {
     try {
       await api.updateMe({ preferences: { notifications: prefs } });
       await refreshUser();
-      toast.success("تم حفظ تفضيلات الإشعارات ✅");
+      toast.success(t("تم حفظ تفضيلات الإشعارات ✅"));
     } catch (err) {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || t("حدث خطأ"));
     }
     setSaving(false);
   }
 
   const items = [
-    { key: "newMaterial",  label: "مواد تعليمية جديدة",     desc: "عند رفع مواد في مادتك" },
-    { key: "liveLesson",   label: "دروس مباشرة قادمة",      desc: "تذكير قبل بدء الدرس بـ 15 دقيقة" },
-    { key: "challenges",   label: "تحديات جديدة",           desc: "عند فتح تحديات في صفّك" },
-    { key: "rewards",      label: "المكافآت والشارات",       desc: "عند منحك جائزة أو وسام" },
-    { key: "chat",         label: "رسائل الشات",            desc: "إشعارات رسائل المجموعة" },
-    { key: "weeklyDigest", label: "ملخّص أسبوعي",           desc: "ملخص نشاطك كل أسبوع" },
+    { key: "newMaterial", label: "مواد تعليمية جديدة", desc: "عند اعتماد مادة دراسية لصفك أو تخصصك", required: true },
+    { key: "liveLesson", label: "دروس مباشرة قادمة", desc: "عند إنشاء درس جديد للصفوف المعنية", required: true },
+    { key: "community", label: "منشورات المجتمع والتعليقات", desc: "رسائل عن المنشورات والتعليقات الجديدة" },
+    { key: "rewards", label: "المكافآت والشارات", desc: "عند منحك جائزة أو وسام" },
+    { key: "chat", label: "رسائل الشات", desc: "رسائل عند وصول رسالة جديدة" },
+    { key: "weeklyDigest", label: "ملخّص أسبوعي", desc: "ملخص نشاط المنصة كل أسبوع" },
   ];
 
-  function Toggle({ on, onToggle }) {
+  function Toggle({ on, onToggle, disabled = false, label }) {
     return (
       <button
         type="button"
         onClick={onToggle}
-        className={`w-11 h-6 rounded-full transition-colors relative ${on ? "bg-blue-600" : "bg-slate-200"}`}
+        disabled={disabled}
+        aria-pressed={on}
+        aria-label={label}
+        className={`w-11 h-6 rounded-full transition-colors relative ${on ? "bg-blue-600" : "bg-slate-200"} ${disabled ? "cursor-not-allowed opacity-80" : ""}`}
       >
         <span
           className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${on ? "right-0.5" : "left-0.5"}`}
@@ -327,8 +363,9 @@ function NotificationsTab({ user, refreshUser }) {
   }
 
   return (
-    <div dir="rtl">
-      <h3 className="font-extrabold text-slate-800 mb-5 text-sm">تفضيلات الإشعارات</h3>
+    <div dir={language === "ar" ? "rtl" : "ltr"}>
+      <h3 className="font-extrabold text-slate-800 mb-5 text-sm">{t("تفضيلات الإشعارات")}</h3>
+      <p className="text-xs text-slate-500 mb-4">{t("الإشعارات الدراسية المهمة مفعلة دائمًا، ويمكنك إيقاف الإشعارات الاجتماعية والترفيهية فقط.")}</p>
       <div className="space-y-3">
         {items.map((item) => (
           <div
@@ -336,10 +373,10 @@ function NotificationsTab({ user, refreshUser }) {
             className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100"
           >
             <div>
-              <p className="font-bold text-slate-800 text-sm">{item.label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
+              <p className="font-bold text-slate-800 text-sm">{t(item.label)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{t(item.desc)}</p>
             </div>
-            <Toggle on={prefs[item.key]} onToggle={() => toggle(item.key)} />
+            <Toggle on={item.required || prefs[item.key]} onToggle={() => toggle(item.key)} disabled={item.required} label={t(item.label)} />
           </div>
         ))}
       </div>
@@ -348,7 +385,7 @@ function NotificationsTab({ user, refreshUser }) {
         disabled={saving}
         className="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl flex items-center gap-2 transition disabled:opacity-60"
       >
-        <Save className="w-4 h-4" /> {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+        <Save className="w-4 h-4" /> {saving ? t("جاري الحفظ...") : t("حفظ التغييرات")}
       </button>
     </div>
   );
@@ -356,6 +393,7 @@ function NotificationsTab({ user, refreshUser }) {
 
 /* ─── تبويب الخصوصية ─── */
 function PrivacyTab({ user, refreshUser }) {
+  const { language, t } = useI18n();
   const DEFAULTS = {
     showProfile: true, showPoints: true, showBadges: true,
     allowMessages: false, dataAnalytics: true,
@@ -370,9 +408,9 @@ function PrivacyTab({ user, refreshUser }) {
     try {
       await api.updateMe({ preferences: { privacy: settings } });
       await refreshUser();
-      toast.success("تم حفظ إعدادات الخصوصية ✅");
+      toast.success(t("تم حفظ إعدادات الخصوصية ✅"));
     } catch (err) {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || t("حدث خطأ"));
     }
     setSaving(false);
   }
@@ -400,8 +438,8 @@ function PrivacyTab({ user, refreshUser }) {
   }
 
   return (
-    <div dir="rtl">
-      <h3 className="font-extrabold text-slate-800 mb-5 text-sm">إعدادات الخصوصية</h3>
+    <div dir={language === "ar" ? "rtl" : "ltr"}>
+      <h3 className="font-extrabold text-slate-800 mb-5 text-sm">{t("إعدادات الخصوصية")}</h3>
       <div className="space-y-3">
         {items.map((item) => (
           <div
@@ -409,8 +447,8 @@ function PrivacyTab({ user, refreshUser }) {
             className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100"
           >
             <div>
-              <p className="font-bold text-slate-800 text-sm">{item.label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
+              <p className="font-bold text-slate-800 text-sm">{t(item.label)}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{t(item.desc)}</p>
             </div>
             <Toggle on={settings[item.key]} onToggle={() => toggle(item.key)} />
           </div>
@@ -421,7 +459,7 @@ function PrivacyTab({ user, refreshUser }) {
         disabled={saving}
         className="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl flex items-center gap-2 transition disabled:opacity-60"
       >
-        <Save className="w-4 h-4" /> {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+        <Save className="w-4 h-4" /> {saving ? t("جاري الحفظ...") : t("حفظ التغييرات")}
       </button>
     </div>
   );
@@ -429,9 +467,10 @@ function PrivacyTab({ user, refreshUser }) {
 
 /* ─── تبويب اللغة والمظهر ─── */
 function LanguageTab({ user, refreshUser }) {
+  const { language: activeLanguage, changeLanguage, t } = useI18n();
   const p = user?.preferences || {};
   const [theme, setTheme]       = useState(p.theme || "light");
-  const [language, setLanguage] = useState(p.language || "ar");
+  const [language, setLanguage] = useState(p.language || activeLanguage);
   const [fontSize, setFontSize] = useState(p.fontSize || "medium");
   const [saving, setSaving]     = useState(false);
 
@@ -443,18 +482,18 @@ function LanguageTab({ user, refreshUser }) {
       // نطبّق حجم الخط فوراً على جذر الصفحة (Tailwind بيستخدم rem فبيتأثر كله)
       const px = fontSize === "small" ? "15px" : fontSize === "large" ? "18px" : "16px";
       document.documentElement.style.fontSize = px;
-      toast.success("تم حفظ إعدادات المظهر ✅");
+      toast.success(t("تم حفظ إعدادات المظهر ✅"));
     } catch (err) {
-      toast.error(err.message || "حدث خطأ");
+      toast.error(err.message || t("حدث خطأ"));
     }
     setSaving(false);
   }
 
   return (
-    <div dir="rtl" className="space-y-6">
+    <div dir={activeLanguage === "ar" ? "rtl" : "ltr"} className="space-y-6">
       {/* المظهر */}
       <div>
-        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">المظهر</h3>
+        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">{t("المظهر")}</h3>
         <div className="grid grid-cols-3 gap-3">
           {[
             { id: "light",  label: "فاتح",   icon: Sun  },
@@ -473,7 +512,7 @@ function LanguageTab({ user, refreshUser }) {
                 }`}
               >
                 <Ic className="w-5 h-5" />
-                <span className="text-xs font-bold">{label}</span>
+                <span className="text-xs font-bold">{t(label)}</span>
               </button>
             );
           })}
@@ -482,7 +521,7 @@ function LanguageTab({ user, refreshUser }) {
 
       {/* اللغة */}
       <div>
-        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">اللغة</h3>
+        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">{t("اللغة")}</h3>
         <div className="grid grid-cols-2 gap-3">
           {[
             { id: "ar", label: "العربية",   flag: "🇪🇬" },
@@ -490,7 +529,7 @@ function LanguageTab({ user, refreshUser }) {
           ].map(({ id, label, flag }) => (
             <button
               key={id}
-              onClick={() => setLanguage(id)}
+              onClick={() => { setLanguage(id); changeLanguage(id); }}
               className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition ${
                 language === id
                   ? "border-blue-500 bg-blue-50"
@@ -511,7 +550,7 @@ function LanguageTab({ user, refreshUser }) {
 
       {/* حجم الخط */}
       <div>
-        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">حجم الخط</h3>
+        <h3 className="font-extrabold text-slate-800 mb-3 text-sm">{t("حجم الخط")}</h3>
         <div className="flex gap-2">
           {[
             { id: "small",  label: "صغير" },
@@ -527,7 +566,7 @@ function LanguageTab({ user, refreshUser }) {
                   : "border-slate-200 text-slate-500 hover:border-blue-300"
               }`}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -538,7 +577,7 @@ function LanguageTab({ user, refreshUser }) {
         disabled={saving}
         className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl flex items-center gap-2 transition disabled:opacity-60"
       >
-        <Save className="w-4 h-4" /> {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+        <Save className="w-4 h-4" /> {saving ? t("جاري الحفظ...") : t("حفظ التغييرات")}
       </button>
     </div>
   );
@@ -549,6 +588,7 @@ function LanguageTab({ user, refreshUser }) {
    ═══════════════════════════════════════════ */
 function Settings() {
   const { user, logout, refreshUser } = useAuth();
+  const { language, t } = useI18n();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -562,22 +602,22 @@ function Settings() {
     GRADES.find((g) => g.value === user?.grade)?.label || user?.grade || "—";
 
   return (
-    <div dir="rtl" className="max-w-4xl mx-auto">
+    <div dir={language === "ar" ? "rtl" : "ltr"} className="max-w-4xl mx-auto">
       {/* ─── رأس الصفحة ─── */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-blue-600">الإعدادات</h1>
+          <h1 className="text-2xl font-extrabold text-blue-600">{t("الإعدادات")}</h1>
           <p className="text-sm text-slate-400 mt-1">
-            قم بتحديث ملفك الشخصي وتخصيص تجربتك التعليمية
+            {t("قم بتحديث ملفك الشخصي وتخصيص تجربتك التعليمية")}
           </p>
         </div>
 
         {/* بطاقة المستخدم */}
         <div className="hidden sm:flex items-center gap-3 bg-white rounded-2xl border border-slate-100 shadow-sm px-4 py-3">
-          <div className="text-right">
+          <div className={language === "ar" ? "text-right" : "text-left"}>
             <p className="font-extrabold text-slate-800 text-sm">{user?.name || "—"}</p>
             <p className="text-[11px] text-slate-400">
-              المستوى العاشر · XP {(user?.points || 0).toLocaleString("ar")}
+              {language === "en" ? `Level 10 · XP ${(user?.points || 0).toLocaleString("en-US")}` : `المستوى العاشر · XP ${(user?.points || 0).toLocaleString("ar")}`}
             </p>
           </div>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-sm font-extrabold shadow">
@@ -604,7 +644,7 @@ function Settings() {
                 }`}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
-                {tab.label}
+                {t(tab.label)}
               </button>
             );
           })}
@@ -626,7 +666,7 @@ function Settings() {
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                {tab.label}
+                {t(tab.label)}
               </button>
             );
           })}
@@ -637,7 +677,7 @@ function Settings() {
           {/* عنوان التبويب */}
           <div className="mb-6 pb-4 border-b border-slate-100">
             <h2 className="font-extrabold text-slate-800 text-base">
-              {TABS.find((t) => t.id === activeTab)?.label}
+              {t(TABS.find((tab) => tab.id === activeTab)?.label)}
             </h2>
           </div>
 

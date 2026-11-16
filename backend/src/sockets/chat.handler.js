@@ -1,5 +1,6 @@
 const Message = require('../models/Message');
 const chatService = require('../services/chat.service');
+const notificationService = require('../services/notification.service');
 
 // هاندلر الشات — بيتنفّذ لكل مستخدم بيتّصل.
 // الفكرة: كل صف دراسي = "غرفة" (room) اسمها كود الصف مثل sec-1.
@@ -47,6 +48,9 @@ function registerChatHandlers(io, socket) {
 
       // نبثّها لكل اللي في الغرفة (بما فيهم اللي باعتها)
       io.to(room).emit('new_message', message);
+      notificationService.notifyChatMessage(room, socket.user.id, socket.user.name).catch((error) => {
+        console.error('[email] Failed to dispatch chat notification:', error.message);
+      });
     } catch (e) {
       console.error('خطأ في إرسال الرسالة:', e.message);
       socket.emit('error_message', 'فشل إرسال الرسالة');

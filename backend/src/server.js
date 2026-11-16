@@ -7,6 +7,7 @@ const path = require('path');
 
 const connectDB = require('./config/db');
 const initSocket = require('./config/socket');
+const notificationService = require('./services/notification.service');
 const errorMiddleware = require('./middleware/error.middleware');
 const { sendError } = require('./utils/apiResponse');
 
@@ -39,6 +40,7 @@ app.use(errorMiddleware);
 // ونركّب عليه Express و Socket.IO مع بعض على نفس البورت.
 const server = http.createServer(app);
 initSocket(server);
+notificationService.startWeeklyDigest();
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 السيرفر شغّال على http://localhost:${PORT}`));

@@ -10,6 +10,7 @@ import Rewards from "./pages/Rewards.jsx";
 import Lessons from "./pages/Lessons.jsx";
 import Challenges from "./pages/Challenges.jsx";
 import SoftSkills from "./pages/SoftSkills.jsx";
+import { AdminLanguageProvider } from "./i18n.js";
 
 // حارس بسيط: لو مفيش توكن أدمن يرجّع لصفحة الدخول
 function Guard({ children }) {
@@ -20,6 +21,7 @@ function Guard({ children }) {
 
 function App() {
   return (
+    <AdminLanguageProvider>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<Guard><Dashboard /></Guard>} />
@@ -33,6 +35,7 @@ function App() {
       <Route path="/soft-skills" element={<Guard><SoftSkills /></Guard>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </AdminLanguageProvider>
   );
 }
 

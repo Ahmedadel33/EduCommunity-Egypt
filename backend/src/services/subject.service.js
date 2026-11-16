@@ -22,4 +22,18 @@ async function create({ name, grade, description }) {
   return subject;
 }
 
-module.exports = { list, create };
+async function ensureTeacherSubjects(name, grades) {
+  const operations = [...new Set(grades)].map((grade) => ({
+    updateOne: {
+      filter: { name, grade },
+      update: { $setOnInsert: { name, grade } },
+      upsert: true,
+    },
+  }));
+
+  if (operations.length > 0) {
+    await Subject.bulkWrite(operations);
+  }
+}
+
+module.exports = { list, create, ensureTeacherSubjects };

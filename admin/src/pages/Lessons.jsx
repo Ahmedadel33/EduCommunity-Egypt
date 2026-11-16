@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Video, Calendar, ExternalLink } from "lucide-react";
 import { api } from "../api.js";
+import { useAdminI18n } from "../i18n.js";
 
 // متابعة الدروس أونلاين — الأدمن يشوف كل الدروس المجدولة (عرض فقط)
 function Lessons() {
+  const { language, t } = useAdminI18n();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,13 +19,13 @@ function Lessons() {
     <div className="max-w-4xl">
       <div className="flex items-center gap-2 mb-1">
         <Video className="w-5 h-5 text-blue-600" />
-        <h1 className="text-xl font-extrabold text-slate-800">متابعة الدروس أونلاين</h1>
+        <h1 className="text-xl font-extrabold text-slate-800">{t("متابعة الدروس أونلاين")}</h1>
       </div>
-      <p className="text-sm text-slate-400 mb-5">كل الدروس المباشرة اللي أنشأها المدرسون.</p>
+      <p className="text-sm text-slate-400 mb-5">{t("كل الدروس المباشرة اللي أنشأها المدرسون.")}</p>
 
-      {loading && <p className="text-sm text-slate-400">جاري التحميل...</p>}
+      {loading && <p className="text-sm text-slate-400">{t("جاري التحميل...")}</p>}
       {!loading && lessons.length === 0 && (
-        <div className={`${card} p-8 text-center text-slate-400 text-sm`}>لا توجد دروس مجدولة.</div>
+        <div className={`${card} p-8 text-center text-slate-400 text-sm`}>{t("لا توجد دروس مجدولة.")}</div>
       )}
 
       <div className="space-y-3">
@@ -36,13 +38,13 @@ function Lessons() {
               <div>
                 <p className="font-bold text-slate-800 text-sm">{l.title}</p>
                 <p className="text-[11px] text-slate-400">
-                  أ. {l.teacher?.name || "—"} • {l.subject || ""} • {l.startsAt ? new Date(l.startsAt).toLocaleString("ar-EG") : ""}
+                  {language === "ar" ? "أ. " : ""}{l.teacher?.name || "—"} • {t(l.subject || "")} • {l.startsAt ? new Date(l.startsAt).toLocaleString(language === "ar" ? "ar-EG" : "en-US") : ""}
                 </p>
               </div>
             </div>
             {l.meetingUrl && (
               <a href={l.meetingUrl} target="_blank" rel="noreferrer" className="text-blue-600 text-xs font-bold flex items-center gap-1">
-                <ExternalLink className="w-3.5 h-3.5" /> الرابط
+                <ExternalLink className="w-3.5 h-3.5" /> {t("الرابط")}
               </a>
             )}
           </div>

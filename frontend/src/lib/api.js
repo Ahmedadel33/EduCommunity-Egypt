@@ -98,6 +98,7 @@ export const api = {
   rateTeacher: (id, rating, comment) => http.post("/teachers/" + id + "/rate", { rating, comment }).then(unwrap),
 
   // ===== الأدمن =====
+  getPlatformStats: () => http.get("/platform/stats").then(unwrap),
   getAdminStats: () => http.get("/admin/stats").then(unwrap),
   getAdminUsers: () => http.get("/admin/users").then(unwrap),
   deleteUser: (id) => http.delete("/admin/users/" + id).then(unwrap),

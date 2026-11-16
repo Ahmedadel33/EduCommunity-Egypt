@@ -33,6 +33,7 @@ router.use('/posts', require('./post.routes'));           // المنشورات 
 router.use('/challenges', require('./challenge.routes')); // التحديات
 router.use('/leaderboard', require('./leaderboard.routes')); // المتصدّرون
 router.use('/admin', require('./admin.routes'));          // إحصائيات وإدارة المستخدمين
+router.use('/platform', require('./platform.routes'));
 
 // فحص إن السيرفر شغّال
 router.get('/health', (req, res) => {

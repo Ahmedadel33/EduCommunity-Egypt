@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FileCheck2, Check, Trash2, FileText, Upload, Plus, X, Search, ExternalLink } from "lucide-react";
 import { api } from "../api.js";
+import { useAdminI18n } from "../i18n.js";
 
 const GRADES = [
   { value: "sec-1", label: "الأول الثانوي" },
@@ -21,6 +22,7 @@ const TABS = [
 // إدارة المواد — الأدمن يشوف كل المحتوى المرفوع (قبل وبعد الموافقة)،
 // يبحث ويفلتر بالمادة أو المدرس، يوافق/يرفض، ويرفع مواد الوزارة.
 function Materials() {
+  const { language, t } = useAdminI18n();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
@@ -77,20 +79,20 @@ function Materials() {
 
   async function approve(id) {
     await api.approveMaterial(id);
-    setMsg("تمت الموافقة على المادة ✅");
+    setMsg(t("تمت الموافقة على المادة ✅"));
     load();
   }
   async function reject(id) {
     await api.deleteMaterial(id);
-    setMsg("تم حذف المادة");
+    setMsg(t("تم حذف المادة"));
     load();
   }
 
   async function uploadMinistry(e) {
     e.preventDefault();
     setMsg("");
-    if (!title.trim() || !subject) { setMsg("اكتب العنوان واختر المادة"); return; }
-    if (!file && !fileUrl.trim()) { setMsg("ارفع ملفاً أو أدخل رابطاً"); return; }
+    if (!title.trim() || !subject) { setMsg(t("اكتب العنوان واختر المادة")); return; }
+    if (!file && !fileUrl.trim()) { setMsg(t("ارفع ملفاً أو أدخل رابطاً")); return; }
     try {
       const fd = new FormData();
       fd.append("title", title.trim());
@@ -99,7 +101,7 @@ function Materials() {
       fd.append("type", type);
       if (file) fd.append("file", file); else fd.append("fileUrl", fileUrl.trim());
       const res = await api.createMaterial(fd);
-      setMsg(res.message || "تم رفع مادة الوزارة (معتمدة فوراً) ✅");
+      setMsg(res.message || t("تم رفع مادة الوزارة (معتمدة فوراً) ✅"));
       setTitle(""); setSubject(""); setFileUrl(""); setFile(null); setShowUpload(false);
       load();
     } catch (err) { setMsg(err.message); }
@@ -114,12 +116,12 @@ function Materials() {
         <div>
           <div className="flex items-center gap-2">
             <FileCheck2 className="w-5 h-5 text-blue-600" />
-            <h1 className="text-xl font-extrabold text-slate-800">إدارة المواد التعليمية</h1>
+            <h1 className="text-xl font-extrabold text-slate-800">{t("إدارة المواد التعليمية")}</h1>
           </div>
-          <p className="text-sm text-slate-400 mt-1">شوف كل المحتوى المرفوع (قبل وبعد الموافقة) · ابحث وفلتر بالمادة أو المدرس · وارفع مواد الوزارة.</p>
+            <p className="text-sm text-slate-400 mt-1">{t("شوف كل المحتوى المرفوع (قبل وبعد الموافقة) · ابحث وفلتر بالمادة أو المدرس · وارفع مواد الوزارة.")}</p>
         </div>
         <button onClick={() => setShowUpload((s) => !s)} className="bg-blue-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2">
-          {showUpload ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {showUpload ? "إغلاق" : "رفع مادة وزارة"}
+            {showUpload ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {t(showUpload ? "إغلاق" : "رفع مادة وزارة")}
         </button>
       </div>
 
@@ -128,41 +130,41 @@ function Materials() {
       {/* نموذج رفع مادة الوزارة */}
       {showUpload && (
         <form onSubmit={uploadMinistry} className={`${card} p-4 mb-4`}>
-          <p className="font-extrabold text-slate-800 mb-3 flex items-center gap-2"><Upload className="w-4 h-4 text-blue-600" /> رفع مادة الوزارة الرسمية</p>
+          <p className="font-extrabold text-slate-800 mb-3 flex items-center gap-2"><Upload className="w-4 h-4 text-blue-600" /> {t("رفع مادة الوزارة الرسمية")}</p>
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 mb-1">العنوان</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} className={input} placeholder="مثال: منهج الفيزياء الرسمي" />
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t("العنوان")}</label>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} className={input} placeholder={t("مثال: منهج الفيزياء الرسمي")} />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">الصف</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t("الصف")}</label>
               <select value={grade} onChange={(e) => { setGrade(e.target.value); setSubject(""); }} className={input}>
-                {GRADES.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                {GRADES.map((g) => <option key={g.value} value={g.value}>{t(g.label)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">المادة</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t("المادة")}</label>
               <select value={subject} onChange={(e) => setSubject(e.target.value)} className={input}>
-                <option value="">{uploadSubjects.length ? "اختر المادة" : "لا توجد مواد لهذا الصف"}</option>
-                {uploadSubjects.map((s) => <option key={s.id || s._id} value={s.id || s._id}>{s.name}</option>)}
+                <option value="">{t(uploadSubjects.length ? "اختر المادة" : "لا توجد مواد لهذا الصف")}</option>
+                {uploadSubjects.map((s) => <option key={s.id || s._id} value={s.id || s._id}>{t(s.name)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">النوع</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t("النوع")}</label>
               <select value={type} onChange={(e) => setType(e.target.value)} className={input}>
-                {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {TYPES.map((item) => <option key={item.value} value={item.value}>{t(item.label)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">رفع ملف</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t("رفع ملف")}</label>
               <input type="file" accept=".pdf,image/*,video/mp4,video/webm" onChange={(e) => setFile(e.target.files?.[0] || null)} className={input} />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 mb-1">أو رابط خارجي</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t("أو رابط خارجي")}</label>
               <input value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} className={input} placeholder="https://..." />
             </div>
           </div>
-          <button className="mt-4 bg-teal-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"><Upload className="w-4 h-4" /> رفع (معتمدة فوراً)</button>
+          <button className="mt-4 bg-teal-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"><Upload className="w-4 h-4" /> {t("رفع (معتمدة فوراً)")}</button>
         </form>
       )}
 
@@ -170,36 +172,36 @@ function Materials() {
       <div className={`${card} p-3 mb-4 flex flex-wrap items-center gap-2`}>
         {/* تبويبات الحالة */}
         <div className="flex bg-slate-50 rounded-xl p-1">
-          {TABS.map((t) => (
-            <button key={t.value} onClick={() => setStatus(t.value)}
-              className={"px-3 py-1.5 text-xs font-bold rounded-lg " + (status === t.value ? "bg-blue-600 text-white" : "text-slate-500")}>
-              {t.label}
+          {TABS.map((tab) => (
+            <button key={tab.value} onClick={() => setStatus(tab.value)}
+              className={"px-3 py-1.5 text-xs font-bold rounded-lg " + (status === tab.value ? "bg-blue-600 text-white" : "text-slate-500")}>
+              {t(tab.label)}
             </button>
           ))}
         </div>
         {/* بحث */}
         <div className="relative flex-1 min-w-[160px]">
           <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالعنوان..." className={input + " pr-9"} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("بحث بالعنوان...")} className={input + " pr-9"} />
         </div>
         {/* فلترة بالمادة */}
         <select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none">
-          <option value="">كل المواد</option>
-          {allSubjects.map((s) => <option key={s.id || s._id} value={s.id || s._id}>{s.name} ({s.grade})</option>)}
+          <option value="">{t("كل المواد")}</option>
+          {allSubjects.map((s) => <option key={s.id || s._id} value={s.id || s._id}>{t(s.name)} ({t(s.grade)})</option>)}
         </select>
         {/* فلترة بالمدرس */}
         <select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none">
-          <option value="">كل المدرسين</option>
+          <option value="">{t("كل المدرسين")}</option>
           {teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
 
       {/* النتائج */}
-      {loading && <p className="text-sm text-slate-400">جاري التحميل...</p>}
+      {loading && <p className="text-sm text-slate-400">{t("جاري التحميل...")}</p>}
       {!loading && materials.length === 0 && (
-        <div className={`${card} p-8 text-center text-slate-400 text-sm`}>لا توجد مواد مطابقة.</div>
+        <div className={`${card} p-8 text-center text-slate-400 text-sm`}>{t("لا توجد مواد مطابقة.")}</div>
       )}
-      <p className="text-xs text-slate-400 mb-2">{materials.length} مادة</p>
+      <p className="text-xs text-slate-400 mb-2">{language === "en" ? `${materials.length} materials` : `${materials.length} مادة`}</p>
 
       <div className="space-y-3">
         {materials.map((m) => (
@@ -212,22 +214,22 @@ function Materials() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-bold text-slate-800 text-sm truncate">{m.title}</p>
                   {m.status === "pending"
-                    ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">بانتظار الموافقة</span>
-                    : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">معتمدة</span>}
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{m.source === "ministry" ? "وزارة" : "مدرس"}</span>
+                    ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{t("بانتظار الموافقة")}</span>
+                    : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">{t("معتمدة")}</span>}
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{t(m.source === "ministry" ? "وزارة" : "مدرس")}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {m.subject?.name || "—"} • {m.type} • {m.uploadedBy?.name ? "رفعها: " + m.uploadedBy.name : "الوزارة"}
+                  {t(m.subject?.name || "—")} • {t(m.type)} • {m.uploadedBy?.name ? `${t("رفعها: ")}${m.uploadedBy.name}` : t("الوزارة")}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {m.fileUrl && (
                 <a href={m.fileUrl.startsWith("http") ? m.fileUrl : ((import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "") + m.fileUrl)} target="_blank" rel="noreferrer"
-                  className="text-slate-500 text-xs font-bold px-2 py-2 rounded-lg bg-slate-50 flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> عرض</a>
+                  className="text-slate-500 text-xs font-bold px-2 py-2 rounded-lg bg-slate-50 flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> {t("عرض")}</a>
               )}
               {m.status === "pending" && (
-                <button onClick={() => approve(m._id || m.id)} className="bg-teal-500 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1"><Check className="w-4 h-4" /> موافقة</button>
+                <button onClick={() => approve(m._id || m.id)} className="bg-teal-500 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1"><Check className="w-4 h-4" /> {t("موافقة")}</button>
               )}
               <button onClick={() => reject(m._id || m.id)} className="bg-red-50 text-red-600 text-xs font-bold px-2 py-2 rounded-xl"><Trash2 className="w-4 h-4" /></button>
             </div>

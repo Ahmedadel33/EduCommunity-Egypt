@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, FileCheck2, Clock, CalendarClock, Users, Award, Video, Trophy, Sparkles, LogOut, Shield, Menu, X } from "lucide-react";
+import { useAdminI18n } from "./i18n.js";
+import LanguageSwitcher from "./LanguageSwitcher.jsx";
 
 // روابط القائمة الجانبية للأدمن
 const links = [
@@ -18,6 +20,7 @@ const links = [
 function AdminLayout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { language, t } = useAdminI18n();
   const [open, setOpen] = useState(false); // القائمة على الموبايل
 
   function logout() {
@@ -27,18 +30,18 @@ function AdminLayout({ children }) {
     navigate("/login");
   }
 
-  const adminName = JSON.parse(localStorage.getItem("admin_user") || "{}")?.name || "الأدمن";
+  const adminName = JSON.parse(localStorage.getItem("admin_user") || "{}")?.name || (language === "en" ? "Admin" : "الأدمن");
 
   return (
-    <div className="min-h-screen flex">
+    <div dir={language === "ar" ? "rtl" : "ltr"} className="min-h-screen flex">
       {/* خلفية معتّمة على الموبايل لما القائمة مفتوحة */}
       {open && <div onClick={() => setOpen(false)} className="fixed inset-0 bg-slate-900/40 z-30 lg:hidden" />}
 
       {/* القائمة الجانبية (يمين لأننا RTL) — drawer على الموبايل، ثابتة على الديسكتوب */}
       <aside
         className={
-          "w-64 bg-white border-l border-slate-100 flex-col shrink-0 z-40 " +
-          "fixed inset-y-0 right-0 lg:static lg:flex " +
+          "w-64 bg-white border-slate-100 flex-col shrink-0 z-40 " +
+          `fixed inset-y-0 ${language === "ar" ? "right-0 border-l" : "left-0 border-r"} lg:static lg:flex ` +
           (open ? "flex" : "hidden")
         }
       >
@@ -46,7 +49,7 @@ function AdminLayout({ children }) {
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center"><Shield className="w-5 h-5" /></div>
             <div>
-              <p className="font-extrabold text-slate-800 text-sm">لوحة الأدمن</p>
+              <p className="font-extrabold text-slate-800 text-sm">{t("لوحة الأدمن")}</p>
               <p className="text-[11px] text-slate-400">EduCommunity</p>
             </div>
           </div>
@@ -68,14 +71,14 @@ function AdminLayout({ children }) {
                   (active ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50")
                 }
               >
-                <Icon className="w-4 h-4" /> {l.label}
+                <Icon className="w-4 h-4" /> {t(l.label)}
               </Link>
             );
           })}
         </nav>
 
         <button onClick={logout} className="m-3 flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50">
-          <LogOut className="w-4 h-4" /> تسجيل الخروج
+          <LogOut className="w-4 h-4" /> {t("تسجيل الخروج")}
         </button>
       </aside>
 
@@ -85,9 +88,12 @@ function AdminLayout({ children }) {
           <div className="flex items-center gap-3">
             {/* زر فتح القائمة على الموبايل */}
             <button onClick={() => setOpen(true)} className="lg:hidden text-slate-500"><Menu className="w-5 h-5" /></button>
-            <span className="font-bold text-slate-700 text-sm">مرحباً، {adminName}</span>
+            <span className="font-bold text-slate-700 text-sm">{t("مرحباً،")} {adminName}</span>
           </div>
-          <span className="text-xs text-slate-400 hidden sm:inline">منطقة الإدارة فقط</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400 hidden sm:inline">{t("منطقة الإدارة فقط")}</span>
+            <LanguageSwitcher />
+          </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 overflow-x-hidden">{children}</main>
       </div>
