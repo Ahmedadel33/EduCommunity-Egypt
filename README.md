@@ -71,4 +71,18 @@ Then run the backend, frontend, and admin dashboard together from the repository
 npm run dev
 ```
 
-The frontend is available at `http://localhost:8080`, the admin dashboard at `http://localhost:5200`, and the backend at `http://localhost:5000`. Stop all three with `Ctrl+C`.
+The frontend is available at `http://localhost:8080`, the admin dashboard at `http://localhost:5200/dashboard-control/`, and the backend at `http://localhost:5000`. Stop all three with `Ctrl+C`.
+
+### Deploy to Vercel
+
+Deploy the monorepo as three Vercel projects connected to this repository:
+
+1. Create a frontend project with Root Directory `frontend`.
+2. Create an admin project with Root Directory `admin`.
+3. Create a backend project with Root Directory `backend`.
+
+Each project uses its own `vercel.json`. Set `VITE_API_URL` in the frontend and admin project settings to the deployed backend URL ending in `/api/v1` (for example, `https://<backend-project>.vercel.app/api/v1`). Set `VITE_ADMIN_URL` in the frontend project to the admin deployment URL ending in `/dashboard-control/`.
+
+Set `MONGODB_URI`, `JWT_SECRET`, and `JWT_REFRESH_SECRET` in the backend project. Set `CORS_ORIGIN` to the frontend and admin deployment origins. Configure Cloudinary credentials for persistent uploaded files; Vercel Functions do not persist local uploads. Gmail notification variables are optional.
+
+Vercel's standard `vercel.json` does not support a multi-service `services` array or automatic service bindings. These three projects therefore use the backend deployment URL through `VITE_API_URL`. The backend Express app runs as a Vercel Function; persistent Socket.IO connections and the in-process weekly cron require separate hosting or Vercel-compatible services. If Socket.IO is hosted separately, set `VITE_SOCKET_URL` in the frontend project to its origin.

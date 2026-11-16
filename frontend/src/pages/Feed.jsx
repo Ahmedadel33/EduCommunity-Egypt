@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../lib/i18n";
+import { resolveMediaUrl } from "../lib/media";
 
 // ألوان بطاقة الدور (طالب / معلم / مدير)
 const ROLE_META = {
@@ -138,7 +139,7 @@ const Feed = () => {
 
   // نسخ رابط الصفحة للمشاركة
   const handleShare = () => {
-    navigator.clipboard.writeText("http://localhost:5173/feed");
+    navigator.clipboard.writeText(new URL("/feed", window.location.origin).toString());
     toast.success(t("تم نسخ رابط المشاركة"));
   };
 
@@ -250,7 +251,7 @@ const Feed = () => {
                       <FileText className="w-5 h-5 text-blue-600 shrink-0" />
                       <span className="text-xs font-bold text-slate-700 truncate flex-1">{post.file_url.split("/").pop()}</span>
                       <a
-                        href={`${(import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "")}${post.file_url}`}
+                        href={resolveMediaUrl(post.file_url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 text-xs font-bold shrink-0 hover:underline"

@@ -47,7 +47,7 @@ educommunity-admin/
 
 ```bash
 npm install
-npm run dev      # http://localhost:5200
+npm run dev      # http://localhost:5200/dashboard-control/
 ```
 
 > **مهم:** لازم الباك اند شغّال الأول على **http://localhost:5000**

@@ -3,6 +3,12 @@ import { FileCheck2, Check, Trash2, FileText, Upload, Plus, X, Search, ExternalL
 import { api } from "../api.js";
 import { useAdminI18n } from "../i18n.js";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+const MEDIA_BASE_URL = API_BASE_URL.startsWith("/")
+  ? API_BASE_URL.replace(/\/$/, "")
+  : API_BASE_URL.replace(/\/api(?:\/v1)?\/?$/, "");
+const resolveMediaUrl = (url) => url?.startsWith("http") ? url : `${MEDIA_BASE_URL}${url}`;
+
 const GRADES = [
   { value: "sec-1", label: "الأول الثانوي" },
   { value: "sec-2", label: "الثاني الثانوي" },
@@ -225,7 +231,7 @@ function Materials() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {m.fileUrl && (
-                <a href={m.fileUrl.startsWith("http") ? m.fileUrl : ((import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "") + m.fileUrl)} target="_blank" rel="noreferrer"
+                <a href={resolveMediaUrl(m.fileUrl)} target="_blank" rel="noreferrer"
                   className="text-slate-500 text-xs font-bold px-2 py-2 rounded-lg bg-slate-50 flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> {t("عرض")}</a>
               )}
               {m.status === "pending" && (

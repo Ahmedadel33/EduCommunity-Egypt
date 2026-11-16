@@ -6,14 +6,10 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { gradeLabel } from "../../lib/grades";
+import { resolveMediaUrl } from "../../lib/media";
 import { useI18n } from "../../lib/i18n";
 
-// عنوان الباك عشان نكمّل روابط المرفقات المحلية (/uploads/..)
-const BACKEND = (import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1").replace(/\/api\/v1\/?$/, "");
-function fileUrl(u) {
-  if (!u) return "";
-  return u.startsWith("http") ? u : BACKEND + u;
-}
+const fileUrl = resolveMediaUrl;
 
 // شات الصف — لحظي عبر Socket.IO + تخزين الرسائل + مرفقات (صوت/صورة/ملف)
 function ChatPage() {

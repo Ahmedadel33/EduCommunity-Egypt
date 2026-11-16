@@ -2,6 +2,12 @@ import { Navigate } from "react-router-dom";
 import { Shield } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
+const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || (
+  import.meta.env.DEV
+    ? `${window.location.protocol}//${window.location.hostname}:5200/dashboard-control/`
+    : "/dashboard-control/"
+);
+
 // بيوجّه كل مستخدم لداشبورده حسب دوره بعد تسجيل الدخول
 function RoleHome() {
   const { user, loading } = useAuth();
@@ -23,7 +29,7 @@ function RoleHome() {
           <p className="text-sm text-slate-400 mt-2">
             هذا التطبيق مخصّص للطلاب والمدرسين. من فضلك ادخل من بوابة الإدارة.
           </p>
-          <a href="http://localhost:5200" target="_blank" rel="noreferrer">
+          <a href={ADMIN_URL} target="_blank" rel="noreferrer">
             <button className="w-full mt-4 bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm">
               فتح بوابة الإدارة
             </button>

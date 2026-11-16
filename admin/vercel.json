@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/dashboard-control/",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard-control",
+      "destination": "/dashboard-control/",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/dashboard-control/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/dashboard-control/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}
