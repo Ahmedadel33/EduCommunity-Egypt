@@ -21,6 +21,10 @@
     {
       "source": "/dashboard-control/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
