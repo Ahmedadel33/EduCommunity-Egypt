@@ -71,7 +71,7 @@ Then run the backend, frontend, and admin dashboard together from the repository
 npm run dev
 ```
 
-The frontend is available at `http://localhost:8080`, the admin dashboard at `http://localhost:5200/dashboard-control/`, and the backend at `http://localhost:5000`. Stop all three with `Ctrl+C`.
+The frontend is available at `http://localhost:8080`, the admin dashboard at `http://localhost:5200/`, and the backend at `http://localhost:5000`. Stop all three with `Ctrl+C`.
 
 ### Deploy to Vercel
 
@@ -81,7 +81,7 @@ Deploy the monorepo as three Vercel projects connected to this repository:
 2. Create an admin project with Root Directory `admin`.
 3. Create a backend project with Root Directory `backend`.
 
-Each project uses its own `vercel.json`. Set `VITE_API_URL` in the frontend and admin project settings to the deployed backend URL ending in `/api/v1` (for example, `https://<backend-project>.vercel.app/api/v1`). Set `VITE_ADMIN_URL` in the frontend project to the admin deployment URL ending in `/dashboard-control/`.
+Each project uses its own `vercel.json`. Set `VITE_API_URL` in the frontend and admin project settings to the deployed backend URL ending in `/api/v1` (for example, `https://<backend-project>.vercel.app/api/v1`). Set `VITE_ADMIN_URL` in the frontend project to the admin deployment's root URL (for example, `https://<admin-project>.vercel.app/`).
 
 Set `MONGODB_URI`, `JWT_SECRET`, and `JWT_REFRESH_SECRET` in the backend project. Set `CORS_ORIGIN` to the frontend and admin deployment origins. Configure Cloudinary credentials for persistent uploaded files; Vercel Functions do not persist local uploads. Gmail notification variables are optional.
 

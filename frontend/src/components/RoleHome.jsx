@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 
 const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || (
   import.meta.env.DEV
-    ? `${window.location.protocol}//${window.location.hostname}:5200/dashboard-control/`
-    : "/dashboard-control/"
+    ? `${window.location.protocol}//${window.location.hostname}:5200/`
+    : "/"
 );
 
 // بيوجّه كل مستخدم لداشبورده حسب دوره بعد تسجيل الدخول
